@@ -14,16 +14,345 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      blocked_dates: {
+        Row: {
+          blocked_date: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_date: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_date?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      bookings: {
+        Row: {
+          booking_date: string
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          notes: string | null
+          payment_amount: number | null
+          payment_id: string | null
+          payment_status: string | null
+          service_id: string | null
+          status: string
+          time_slot: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          booking_date: string
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id?: string
+          notes?: string | null
+          payment_amount?: number | null
+          payment_id?: string | null
+          payment_status?: string | null
+          service_id?: string | null
+          status?: string
+          time_slot: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          booking_date?: string
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          notes?: string | null
+          payment_amount?: number | null
+          payment_id?: string | null
+          payment_status?: string | null
+          service_id?: string | null
+          status?: string
+          time_slot?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_date: string | null
+          id: string
+          image_url: string | null
+          is_visible: boolean | null
+          location: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_visible?: boolean | null
+          location?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_visible?: boolean | null
+          location?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gallery_images: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          image_url: string
+          is_visible: boolean | null
+          title: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url: string
+          is_visible?: boolean | null
+          title?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          is_visible?: boolean | null
+          title?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          badge: string | null
+          benefits: string[] | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          duration_minutes: number
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          is_combo: boolean | null
+          name: string
+          original_price: number | null
+          price: number
+          short_description: string | null
+          updated_at: string
+        }
+        Insert: {
+          badge?: string | null
+          benefits?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          duration_minutes?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_combo?: boolean | null
+          name: string
+          original_price?: number | null
+          price: number
+          short_description?: string | null
+          updated_at?: string
+        }
+        Update: {
+          badge?: string | null
+          benefits?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          duration_minutes?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_combo?: boolean | null
+          name?: string
+          original_price?: number | null
+          price?: number
+          short_description?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          created_at: string
+          customer_name: string
+          display_order: number | null
+          feedback: string
+          id: string
+          is_video: boolean | null
+          is_visible: boolean | null
+          rating: number | null
+          video_thumbnail: string | null
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          display_order?: number | null
+          feedback: string
+          id?: string
+          is_video?: boolean | null
+          is_visible?: boolean | null
+          rating?: number | null
+          video_thumbnail?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          display_order?: number | null
+          feedback?: string
+          id?: string
+          is_video?: boolean | null
+          is_visible?: boolean | null
+          rating?: number | null
+          video_thumbnail?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      time_slots: {
+        Row: {
+          capacity: number
+          created_at: string
+          id: string
+          is_active: boolean | null
+          slot_time: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          slot_time: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          slot_time?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin_or_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "staff" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +479,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "staff", "user"],
+    },
   },
 } as const
