@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Snowflake, User, LogOut, LayoutDashboard, ChevronDown, Moon, Sun } from "lucide-react";
+import { User, LogOut, LayoutDashboard, ChevronDown, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import logo from "@/assets/logo.png";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -123,10 +124,12 @@ export function Header() {
             onClick={(e) => handleNavClick(e, "/")}
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-primary/40 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg shadow-primary/30">
-                <Snowflake className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:rotate-180 transition-transform duration-700" />
-              </div>
+              <div className="absolute inset-0 bg-primary/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <img 
+                src={logo} 
+                alt="Chill Thrive Logo" 
+                className="relative w-10 h-10 sm:w-12 sm:h-12 object-contain group-hover:scale-110 transition-all duration-300"
+              />
             </div>
             <div className="flex flex-col">
               <span className={cn(
@@ -139,7 +142,7 @@ export function Header() {
                 "hidden sm:block text-[10px] uppercase tracking-[0.2em] transition-colors duration-300",
                 showWhiteText ? "text-white/70" : "text-muted-foreground"
               )}>
-                Wellness & Recovery
+                Ice Bath Center
               </span>
             </div>
           </Link>

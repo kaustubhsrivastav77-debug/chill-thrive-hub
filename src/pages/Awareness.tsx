@@ -15,16 +15,21 @@ const AwarenessPage = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="py-20 md:py-28 bg-section-gradient">
-        <div className="container mx-auto px-4">
+      <section className="relative py-24 md:py-32 overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/5" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <span className="text-primary font-medium text-sm uppercase tracking-wider">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-xs uppercase tracking-wider mb-6">
               Learn
             </span>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mt-3 mb-6">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
               The Science of Recovery
             </h1>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Understand the science behind cold & heat therapy and how it can 
               transform your health and performance.
             </p>
@@ -84,10 +89,10 @@ const AwarenessPage = () => {
       </section>
 
       {/* Science Behind It */}
-      <section className="py-20 bg-section-gradient">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+      <section className="py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto text-center mb-12 md:mb-16">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
               The Science Behind Ice Baths
             </h2>
             <p className="text-muted-foreground text-lg">

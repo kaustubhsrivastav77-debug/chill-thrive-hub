@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Snowflake, Instagram, Mail, Phone, MapPin, Facebook, Youtube, ArrowUpRight } from "lucide-react";
+import { Instagram, Mail, Phone, MapPin, Facebook, Youtube, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.png";
 
 const quickLinks = [
   { href: "/services", label: "Our Services" },
@@ -35,13 +36,15 @@ export function Footer() {
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1 space-y-6">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center">
-                <Snowflake className="w-6 h-6 text-primary-foreground" />
-              </div>
+              <img 
+                src={logo} 
+                alt="Chill Thrive Logo" 
+                className="w-14 h-14 object-contain bg-background rounded-xl p-1"
+              />
               <div>
                 <span className="text-xl font-bold">ChillThrive</span>
                 <p className="text-xs text-background/60 uppercase tracking-wider">
-                  Wellness & Recovery
+                  Ice Bath Center
                 </p>
               </div>
             </div>
