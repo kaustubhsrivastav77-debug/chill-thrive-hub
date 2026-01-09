@@ -29,10 +29,10 @@ export function HeroSection() {
             style={{ transform: isLoaded ? 'scale(1)' : 'scale(1.1)' }}
           />
         </div>
-        {/* Dark overlay for text visibility - CRITICAL */}
-        <div className="absolute inset-0 bg-foreground/70" />
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground/60 via-foreground/50 to-primary/30" />
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-transparent to-foreground/30" />
+        {/* Dark overlay for text visibility - FIXED: Using explicit dark colors, not theme-dependent */}
+        <div className="absolute inset-0 bg-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/50 to-primary/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
       </div>
 
       {/* Animated Background Elements */}

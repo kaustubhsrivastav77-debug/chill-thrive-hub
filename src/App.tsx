@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ReactNode, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Booking from "./pages/Booking";
@@ -25,29 +26,55 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Page transition wrapper
+// Page transition wrapper with loading spinner
 function PageTransition({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentChildren, setCurrentChildren] = useState(children);
 
   useEffect(() => {
+    setIsLoading(true);
     setIsAnimating(true);
-    const timer = setTimeout(() => {
+    
+    const loadTimer = setTimeout(() => {
       setCurrentChildren(children);
+      setIsLoading(false);
+    }, 200);
+    
+    const animTimer = setTimeout(() => {
       setIsAnimating(false);
-    }, 150);
-    return () => clearTimeout(timer);
+    }, 350);
+    
+    return () => {
+      clearTimeout(loadTimer);
+      clearTimeout(animTimer);
+    };
   }, [location.pathname]);
 
   return (
-    <div
-      className={`transition-all duration-300 ease-out ${
-        isAnimating ? "opacity-0 scale-[0.99]" : "opacity-100 scale-100"
-      }`}
-    >
-      {currentChildren}
-    </div>
+    <>
+      {/* Loading Spinner Overlay */}
+      <div 
+        className={`fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-opacity duration-200 ${
+          isLoading ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <span className="text-sm font-medium text-muted-foreground">Loading...</span>
+        </div>
+      </div>
+      
+      {/* Page Content */}
+      <div
+        className={`transition-all duration-300 ease-out ${
+          isAnimating ? "opacity-0 scale-[0.99]" : "opacity-100 scale-100"
+        }`}
+      >
+        {currentChildren}
+      </div>
+    </>
   );
 }
 
