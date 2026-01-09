@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, Snowflake, User, LogOut, LayoutDashboard, ChevronDown, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,13 +21,23 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
+// Pages with hero/dark backgrounds that need white text when not scrolled
+const darkHeroPages = ["/", "/services", "/gallery", "/awareness", "/founder", "/contact", "/booking"];
+
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeLink, setActiveLink] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, isStaff, signOut } = useAuth();
+
+  // Check if current page has a dark hero section
+  const hasDarkHero = darkHeroPages.includes(location.pathname);
+
+  // Determine if we should show white text (for dark backgrounds)
+  const showWhiteText = hasDarkHero && !scrolled;
 
   useEffect(() => {
     // Check initial theme
@@ -65,6 +75,29 @@ export function Header() {
     }
   };
 
+  // Smooth scroll to section or navigate to page
+  const handleNavClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // If it's an anchor link (starts with #)
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
+
+    // If we're navigating to a different page
+    if (location.pathname !== href) {
+      // Let normal navigation happen
+      return;
+    }
+
+    // If we're already on the same page, scroll to top smoothly
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [location.pathname]);
+
   const handleSignOut = async () => {
     await signOut();
     setIsOpen(false);
@@ -75,8 +108,10 @@ export function Header() {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
         scrolled
-          ? "bg-background/90 backdrop-blur-xl border-b border-border/50 shadow-lg shadow-foreground/5"
-          : "bg-gradient-to-b from-foreground/20 to-transparent"
+          ? "bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg"
+          : hasDarkHero 
+            ? "bg-gradient-to-b from-black/30 to-transparent"
+            : "bg-background/80 backdrop-blur-sm"
       )}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -85,23 +120,24 @@ export function Header() {
           <Link 
             to="/" 
             className="flex items-center gap-2 sm:gap-3 group relative z-10"
+            onClick={(e) => handleNavClick(e, "/")}
           >
             <div className="relative">
               <div className="absolute inset-0 bg-primary/40 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg shadow-primary/30">
-                <Snowflake className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground group-hover:rotate-180 transition-transform duration-700" />
+                <Snowflake className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:rotate-180 transition-transform duration-700" />
               </div>
             </div>
             <div className="flex flex-col">
               <span className={cn(
-                "text-lg sm:text-xl font-bold leading-tight tracking-tight transition-colors",
-                scrolled ? "text-foreground" : "text-primary-foreground"
+                "text-lg sm:text-xl font-bold leading-tight tracking-tight transition-colors duration-300",
+                showWhiteText ? "text-white" : "text-foreground"
               )}>
                 Chill<span className="text-primary">Thrive</span>
               </span>
               <span className={cn(
-                "hidden sm:block text-[10px] uppercase tracking-[0.2em] transition-colors",
-                scrolled ? "text-muted-foreground" : "text-primary-foreground/70"
+                "hidden sm:block text-[10px] uppercase tracking-[0.2em] transition-colors duration-300",
+                showWhiteText ? "text-white/70" : "text-muted-foreground"
               )}>
                 Wellness & Recovery
               </span>
@@ -112,21 +148,28 @@ export function Header() {
           <div className="hidden lg:flex items-center">
             <div className={cn(
               "flex items-center gap-1 rounded-full p-1.5 transition-all duration-300",
-              scrolled ? "bg-muted/60 backdrop-blur-sm" : "bg-primary-foreground/10 backdrop-blur-md"
+              scrolled 
+                ? "bg-muted/60 backdrop-blur-sm" 
+                : showWhiteText 
+                  ? "bg-white/10 backdrop-blur-md" 
+                  : "bg-muted/60 backdrop-blur-sm"
             )}>
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
+                  onClick={(e) => handleNavClick(e, link.href)}
                   onMouseEnter={() => setActiveLink(link.href)}
                   onMouseLeave={() => setActiveLink(null)}
                   className={cn(
                     "relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
                     location.pathname === link.href
-                      ? "text-primary-foreground"
+                      ? "text-white"
                       : scrolled 
                         ? "text-muted-foreground hover:text-foreground" 
-                        : "text-primary-foreground/80 hover:text-primary-foreground"
+                        : showWhiteText
+                          ? "text-white/80 hover:text-white"
+                          : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {/* Active background */}
@@ -137,7 +180,7 @@ export function Header() {
                   {activeLink === link.href && location.pathname !== link.href && (
                     <span className={cn(
                       "absolute inset-0 rounded-full transition-colors",
-                      scrolled ? "bg-muted" : "bg-primary-foreground/10"
+                      scrolled ? "bg-muted" : showWhiteText ? "bg-white/10" : "bg-muted"
                     )} style={{ animation: "fade-in 0.2s ease-out" }} />
                   )}
                   <span className="relative z-10">{link.label}</span>
@@ -155,7 +198,9 @@ export function Header() {
                 "relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
                 scrolled 
                   ? "bg-muted hover:bg-muted/80 text-foreground" 
-                  : "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
+                  : showWhiteText
+                    ? "bg-white/10 hover:bg-white/20 text-white"
+                    : "bg-muted hover:bg-muted/80 text-foreground"
               )}
               aria-label="Toggle theme"
             >
@@ -180,16 +225,21 @@ export function Header() {
                       className={cn(
                         "gap-2 rounded-full transition-colors h-10 px-3",
                         scrolled 
-                          ? "hover:bg-muted/80" 
-                          : "text-primary-foreground hover:bg-primary-foreground/10"
+                          ? "hover:bg-muted/80 text-foreground" 
+                          : showWhiteText
+                            ? "text-white hover:bg-white/10"
+                            : "hover:bg-muted/80 text-foreground"
                       )}
                     >
                       <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                        <span className="text-xs font-bold text-primary-foreground">
+                        <span className="text-xs font-bold text-white">
                           {user.email?.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <span className="hidden lg:inline max-w-[80px] truncate text-sm">
+                      <span className={cn(
+                        "hidden lg:inline max-w-[80px] truncate text-sm",
+                        scrolled ? "text-foreground" : showWhiteText ? "text-white" : "text-foreground"
+                      )}>
                         {user.email?.split("@")[0]}
                       </span>
                       <ChevronDown className="w-4 h-4 opacity-60" />
@@ -232,8 +282,10 @@ export function Header() {
                   className={cn(
                     "rounded-full h-10 px-4",
                     scrolled 
-                      ? "hover:bg-muted/80" 
-                      : "text-primary-foreground hover:bg-primary-foreground/10"
+                      ? "hover:bg-muted/80 text-foreground" 
+                      : showWhiteText
+                        ? "text-white hover:bg-white/10"
+                        : "hover:bg-muted/80 text-foreground"
                   )}
                 >
                   <Link to="/auth" className="gap-2">
@@ -258,10 +310,12 @@ export function Header() {
               className={cn(
                 "lg:hidden relative w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-300",
                 isOpen 
-                  ? "bg-primary text-primary-foreground" 
+                  ? "bg-primary text-white" 
                   : scrolled 
                     ? "text-foreground hover:bg-muted" 
-                    : "text-primary-foreground hover:bg-primary-foreground/10"
+                    : showWhiteText
+                      ? "text-white hover:bg-white/10"
+                      : "text-foreground hover:bg-muted"
               )}
               aria-label="Toggle menu"
             >
