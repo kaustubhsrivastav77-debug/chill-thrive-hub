@@ -17,7 +17,7 @@ const services = [
     duration: "15-20 min",
     price: "₹499",
     rating: 4.9,
-    gradient: "from-blue-600 to-cyan-500",
+    gradient: "from-primary to-accent",
     popular: true,
   },
   {
@@ -41,7 +41,7 @@ const services = [
     duration: "20 min",
     price: "₹399",
     rating: 4.7,
-    gradient: "from-slate-600 to-gray-500",
+    gradient: "from-slate-500 to-slate-600",
     popular: false,
   },
   {
@@ -53,7 +53,7 @@ const services = [
     duration: "60+ min",
     price: "₹999",
     rating: 5.0,
-    gradient: "from-purple-600 to-pink-500",
+    gradient: "from-purple-500 to-pink-500",
     popular: true,
   },
 ];
@@ -108,7 +108,7 @@ export function ServicesPreview() {
           {services.map((service, index) => (
             <Card
               key={service.id}
-              className={`group relative overflow-hidden border-0 bg-card shadow-lg hover:shadow-2xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+              className={`group relative overflow-hidden border border-border/50 bg-card shadow-lg hover:shadow-2xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
               style={{ transitionDelay: `${index * 100}ms` }}
             >
               {/* Popular Badge */}
@@ -125,15 +125,16 @@ export function ServicesPreview() {
                   alt={service.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent opacity-90" />
+                {/* Overlay that works in both light and dark mode */}
+                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
                 
                 {/* Icon Badge */}
                 <div className={`absolute top-4 left-4 w-12 h-12 rounded-xl bg-gradient-to-br ${service.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
-                  <service.icon className="w-6 h-6 text-primary-foreground" />
+                  <service.icon className="w-6 h-6 text-white" />
                 </div>
 
                 {/* Price Tag */}
-                <div className="absolute bottom-4 right-4 px-4 py-2 rounded-xl bg-background/95 backdrop-blur-sm shadow-lg">
+                <div className="absolute bottom-4 right-4 px-4 py-2 rounded-xl bg-card border border-border shadow-lg">
                   <span className="text-lg font-bold text-foreground">{service.price}</span>
                 </div>
               </div>
