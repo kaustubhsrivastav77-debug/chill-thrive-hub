@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/layout/Layout";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Camera, Sparkles, ZoomIn } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface GalleryImage {
   id: string;
@@ -20,10 +21,29 @@ const Gallery = () => {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [isVisible, setIsVisible] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchImages();
   }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (gridRef.current) {
+      observer.observe(gridRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loading]);
 
   const fetchImages = async () => {
     const { data, error } = await supabase
@@ -73,27 +93,43 @@ const Gallery = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="py-16 bg-gradient-to-b from-primary/10 to-background">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Gallery</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+      <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-28 overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-xs uppercase tracking-wider mb-6 animate-fade-in">
+            <Camera className="w-4 h-4" />
+            Visual Stories
+          </span>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 animate-slide-up">
+            Our <span className="text-primary">Gallery</span>
+          </h1>
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: "0.1s" }}>
             Explore moments from our ice bath sessions, community events, and behind-the-scenes content
           </p>
         </div>
       </section>
 
       {/* Category Filter */}
-      <section className="py-8 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap justify-center gap-2">
+      <section className="py-8 sticky top-16 md:top-20 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
             {categories.map((category) => (
               <Button
                 key={category}
                 variant={activeCategory === category ? "default" : "outline"}
                 onClick={() => setActiveCategory(category)}
-                className="capitalize"
+                className={cn(
+                  "capitalize rounded-full px-5 sm:px-6 transition-all duration-300",
+                  activeCategory === category 
+                    ? "shadow-lg shadow-primary/25" 
+                    : "hover:bg-muted/80"
+                )}
               >
-                {category}
+                {category === "all" ? "All Photos" : category}
               </Button>
             ))}
           </div>
@@ -101,44 +137,67 @@ const Gallery = () => {
       </section>
 
       {/* Gallery Grid */}
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4">
+      <section className="py-12 sm:py-16 md:py-20">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8" ref={gridRef}>
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {[...Array(8)].map((_, i) => (
-                <Skeleton key={i} className="aspect-square rounded-lg" />
+                <Skeleton key={i} className="aspect-square rounded-2xl" />
               ))}
             </div>
           ) : filteredImages.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground text-lg">No images available yet.</p>
-              <p className="text-sm text-muted-foreground mt-2">
+            <div className="text-center py-20">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
+                <Camera className="w-10 h-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">No images available yet</h3>
+              <p className="text-muted-foreground">
                 Check back soon for photos from our sessions and events!
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {filteredImages.map((image, index) => (
                 <div
                   key={image.id}
-                  className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group"
+                  className={cn(
+                    "group relative aspect-square rounded-2xl overflow-hidden cursor-pointer bg-muted shadow-lg hover:shadow-2xl transition-all duration-500",
+                    isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                  )}
+                  style={{ transitionDelay: `${index * 50}ms` }}
                   onClick={() => openLightbox(image, index)}
                 >
                   <img
                     src={image.image_url}
                     alt={image.title || "Gallery image"}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-end">
+                  
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                  
+                  {/* Content on hover */}
+                  <div className="absolute inset-0 flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                    <div className="flex justify-end">
+                      <div className="w-10 h-10 rounded-full bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
+                        <ZoomIn className="w-5 h-5 text-primary-foreground" />
+                      </div>
+                    </div>
+                    
                     {image.title && (
-                      <div className="p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <p className="font-semibold">{image.title}</p>
+                      <div className="text-primary-foreground">
+                        <p className="font-semibold text-lg">{image.title}</p>
                         {image.description && (
-                          <p className="text-sm text-white/80">{image.description}</p>
+                          <p className="text-sm text-primary-foreground/80 line-clamp-2">{image.description}</p>
                         )}
                       </div>
                     )}
+                  </div>
+                  
+                  {/* Category badge */}
+                  <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-primary-foreground/10 backdrop-blur-sm text-xs font-medium text-primary-foreground capitalize">
+                    {image.category}
                   </div>
                 </div>
               ))}
@@ -150,55 +209,62 @@ const Gallery = () => {
       {/* Lightbox Dialog */}
       <Dialog open={!!selectedImage} onOpenChange={() => closeLightbox()}>
         <DialogContent 
-          className="max-w-5xl w-full p-0 bg-black/95 border-none"
+          className="max-w-6xl w-full p-0 bg-foreground/95 backdrop-blur-xl border-none rounded-2xl overflow-hidden"
           onKeyDown={handleKeyDown}
         >
-          <div className="relative flex items-center justify-center min-h-[60vh]">
+          <div className="relative flex items-center justify-center min-h-[70vh]">
+            {/* Close button */}
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-4 right-4 text-white hover:bg-white/20 z-10"
+              className="absolute top-4 right-4 text-primary-foreground hover:bg-primary-foreground/10 z-10 rounded-full"
               onClick={closeLightbox}
             >
               <X className="h-6 w-6" />
             </Button>
             
+            {/* Navigation buttons */}
             <Button
               variant="ghost"
               size="icon"
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-foreground hover:bg-primary-foreground/10 rounded-full w-12 h-12"
               onClick={goToPrevious}
             >
               <ChevronLeft className="h-8 w-8" />
             </Button>
             
             {selectedImage && (
-              <div className="flex flex-col items-center p-4">
+              <div className="flex flex-col items-center p-4 sm:p-8 max-w-full">
                 <img
                   src={selectedImage.image_url}
                   alt={selectedImage.title || "Gallery image"}
-                  className="max-h-[70vh] max-w-full object-contain rounded-lg"
+                  className="max-h-[65vh] max-w-full object-contain rounded-xl shadow-2xl"
                 />
                 {(selectedImage.title || selectedImage.description) && (
-                  <div className="mt-4 text-center text-white">
+                  <div className="mt-6 text-center text-primary-foreground max-w-2xl">
                     {selectedImage.title && (
-                      <h3 className="text-xl font-semibold">{selectedImage.title}</h3>
+                      <h3 className="text-2xl font-bold">{selectedImage.title}</h3>
                     )}
                     {selectedImage.description && (
-                      <p className="text-white/80 mt-1">{selectedImage.description}</p>
+                      <p className="text-primary-foreground/80 mt-2">{selectedImage.description}</p>
                     )}
                   </div>
                 )}
-                <p className="text-white/60 mt-2 text-sm">
-                  {selectedIndex + 1} / {filteredImages.length}
-                </p>
+                <div className="mt-4 flex items-center gap-3">
+                  <span className="px-3 py-1 rounded-full bg-primary-foreground/10 text-sm text-primary-foreground capitalize">
+                    {selectedImage.category}
+                  </span>
+                  <span className="text-primary-foreground/60 text-sm">
+                    {selectedIndex + 1} / {filteredImages.length}
+                  </span>
+                </div>
               </div>
             )}
             
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-primary-foreground hover:bg-primary-foreground/10 rounded-full w-12 h-12"
               onClick={goToNext}
             >
               <ChevronRight className="h-8 w-8" />

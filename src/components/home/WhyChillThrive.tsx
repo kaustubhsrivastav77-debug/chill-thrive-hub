@@ -1,4 +1,5 @@
 import { Shield, Users, Sparkles, HeartPulse, CheckCircle2 } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
 
 const features = [
   {
@@ -31,42 +32,73 @@ const stats = [
 ];
 
 export function WhyChillThrive() {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="py-16 sm:py-20 md:py-28 overflow-hidden">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+    <section ref={sectionRef} className="py-20 sm:py-28 md:py-36 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/30 to-background" />
+      <div className="absolute top-1/4 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+      
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Content */}
-          <div>
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-xs uppercase tracking-wider mb-4">
-              <CheckCircle2 className="w-3.5 h-3.5" />
+          <div className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-xs uppercase tracking-wider mb-6">
+              <CheckCircle2 className="w-4 h-4" />
               Why Choose Us
             </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
               Experience the{" "}
               <span className="text-primary">ChillThrive</span>{" "}
               Difference
             </h2>
-            <p className="text-muted-foreground text-base sm:text-lg mb-8 sm:mb-10 leading-relaxed">
+            <p className="text-muted-foreground text-base sm:text-lg md:text-xl mb-10 sm:mb-12 leading-relaxed max-w-xl">
               We're not just another wellness center. We're a movement dedicated to helping 
               you unlock your body's natural healing abilities through the power of temperature therapy.
             </p>
 
-            <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
+            <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
               {features.map((feature, index) => (
                 <div
                   key={feature.title}
-                  className="group flex gap-4 p-4 rounded-2xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                  className={`group relative p-5 sm:p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                  style={{ transitionDelay: `${index * 100 + 200}ms` }}
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                    <feature.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1 text-sm sm:text-base">
-                      {feature.title}
-                    </h3>
-                    <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
-                      {feature.description}
-                    </p>
+                  {/* Hover gradient */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <div className="relative flex gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 group-hover:from-primary/20 group-hover:to-accent/20 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                      <feature.icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground mb-2 text-base sm:text-lg">
+                        {feature.title}
+                      </h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -74,7 +106,7 @@ export function WhyChillThrive() {
           </div>
 
           {/* Stats */}
-          <div className="relative">
+          <div className={`relative transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`}>
             {/* Background decoration */}
             <div className="absolute -inset-4 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 rounded-3xl blur-3xl" />
             
@@ -82,14 +114,20 @@ export function WhyChillThrive() {
               {stats.map((stat, index) => (
                 <div
                   key={stat.label}
-                  className={`bg-card border border-border rounded-2xl p-6 sm:p-8 text-center hover:shadow-xl hover:border-primary/30 transition-all duration-300 ${
-                    index % 2 === 1 ? "mt-6 sm:mt-8" : ""
-                  }`}
+                  className={`group relative bg-card border border-border/50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 text-center hover:shadow-2xl hover:border-primary/30 transition-all duration-500 ${
+                    index % 2 === 1 ? "mt-6 sm:mt-10" : ""
+                  } ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+                  style={{ transitionDelay: `${index * 100 + 400}ms` }}
                 >
-                  <div className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent mb-2">
-                    {stat.value}
+                  {/* Decorative gradient on hover */}
+                  <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <div className="relative">
+                    <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300">
+                      {stat.value}
+                    </div>
+                    <div className="text-muted-foreground text-sm sm:text-base font-medium">{stat.label}</div>
                   </div>
-                  <div className="text-muted-foreground text-sm sm:text-base">{stat.label}</div>
                 </div>
               ))}
             </div>
