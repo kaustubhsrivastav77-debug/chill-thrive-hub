@@ -106,7 +106,7 @@ export function TestimonialsSection() {
   };
 
   return (
-    <section ref={sectionRef} className="py-20 sm:py-28 md:py-36 relative overflow-hidden">
+    <section ref={sectionRef} className="py-20 sm:py-28 md:py-36 relative overflow-hidden bg-background">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-background to-muted/50" />
       <div className="absolute top-1/2 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-y-1/2" />
@@ -136,7 +136,7 @@ export function TestimonialsSection() {
                 variant="outline"
                 size="icon"
                 onClick={prev}
-                className="absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 z-10 hidden md:flex rounded-full shadow-lg bg-background border-border/50 hover:bg-muted hover:border-primary/30 w-12 h-12"
+                className="absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 z-10 hidden md:flex rounded-full shadow-lg bg-card border-border/50 hover:bg-muted hover:border-primary/30 w-12 h-12"
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
@@ -144,7 +144,7 @@ export function TestimonialsSection() {
                 variant="outline"
                 size="icon"
                 onClick={next}
-                className="absolute -right-4 lg:-right-6 top-1/2 -translate-y-1/2 z-10 hidden md:flex rounded-full shadow-lg bg-background border-border/50 hover:bg-muted hover:border-primary/30 w-12 h-12"
+                className="absolute -right-4 lg:-right-6 top-1/2 -translate-y-1/2 z-10 hidden md:flex rounded-full shadow-lg bg-card border-border/50 hover:bg-muted hover:border-primary/30 w-12 h-12"
               >
                 <ChevronRight className="w-5 h-5" />
               </Button>
@@ -156,7 +156,7 @@ export function TestimonialsSection() {
             {getVisibleTestimonials().map((testimonial, index) => (
               <Card
                 key={`${testimonial.id}-${index}`}
-                className={`group relative bg-card border-border/30 hover:border-primary/30 hover:shadow-2xl transition-all duration-500 overflow-hidden ${
+                className={`group relative bg-card border border-border/50 hover:border-primary/30 hover:shadow-2xl transition-all duration-500 overflow-hidden ${
                   index === 1 ? "md:scale-105 md:shadow-xl md:border-primary/20 md:z-10" : ""
                 } ${index === 2 ? "hidden lg:block" : ""} ${index === 1 ? "hidden md:block" : ""}`}
               >
@@ -186,14 +186,14 @@ export function TestimonialsSection() {
                   
                   {/* Author */}
                   <div className="flex items-center gap-4 pt-6 border-t border-border/50">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold text-sm shadow-lg">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm shadow-lg">
                       {getInitials(testimonial.customer_name)}
                     </div>
                     <div>
                       <div className="font-bold text-foreground text-base">
                         {testimonial.customer_name}
                       </div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      <div className="text-sm text-muted-foreground flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-green-500" />
                         Verified Customer
                       </div>
