@@ -6,6 +6,7 @@ import iceBathImage from "@/assets/ice-bath-service.jpg";
 import jacuzziImage from "@/assets/jacuzzi-therapy.jpg";
 import steamImage from "@/assets/steam-bath.jpg";
 import { useEffect, useState, useRef } from "react";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
 const services = [
   {
@@ -88,20 +89,11 @@ export function ServicesPreview() {
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
-        <div className={`text-center max-w-3xl mx-auto mb-14 sm:mb-20 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-xs uppercase tracking-wider mb-6">
-            <Sparkles className="w-4 h-4" />
-            Our Premium Services
-          </span>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
-            Recovery & Wellness{" "}
-            <span className="text-primary">Therapies</span>
-          </h2>
-          <p className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-2xl mx-auto">
-            Choose from our range of premium wellness services designed to help you 
-            recover faster, rejuvenate deeper, and thrive stronger.
-          </p>
-        </div>
+        <SectionHeader
+          badge="Our Premium Services"
+          title="Recovery & Wellness Therapies"
+          subtitle="Choose from our range of premium wellness services designed to help you recover faster, rejuvenate deeper, and thrive stronger."
+        />
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8">

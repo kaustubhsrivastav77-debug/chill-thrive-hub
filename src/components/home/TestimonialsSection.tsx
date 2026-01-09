@@ -3,6 +3,7 @@ import { Star, Quote, ChevronLeft, ChevronRight, MessageSquare } from "lucide-re
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
 interface Testimonial {
   id: string;
@@ -114,18 +115,11 @@ export function TestimonialsSection() {
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <div className={`text-center max-w-3xl mx-auto mb-14 sm:mb-20 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-xs uppercase tracking-wider mb-6">
-            <MessageSquare className="w-4 h-4" />
-            Client Testimonials
-          </span>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
-            What Our <span className="text-primary">Clients</span> Say
-          </h2>
-          <p className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-2xl mx-auto">
-            Real experiences from our community of wellness enthusiasts who have transformed their lives.
-          </p>
-        </div>
+        <SectionHeader
+          badge="Client Testimonials"
+          title="What Our Clients Say"
+          subtitle="Real experiences from our community of wellness enthusiasts who have transformed their lives."
+        />
 
         {/* Testimonials Carousel */}
         <div className={`relative transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
