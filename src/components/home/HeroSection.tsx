@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, Star, Users, Award, Sparkles } from "lucide-react";
 import heroImage from "@/assets/hero-ice-bath.jpg";
+import logo from "@/assets/logo.png";
 import { useEffect, useState, useCallback } from "react";
 
 const stats = [
@@ -120,16 +121,28 @@ export function HeroSection() {
       >
         <div className="max-w-5xl mx-auto">
           <div className="text-center">
+            {/* Logo */}
+            <div 
+              className={`mb-6 transition-all duration-700 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
+            >
+              <img 
+                src={logo} 
+                alt="Chill Thrive Logo" 
+                className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 mx-auto object-contain drop-shadow-2xl"
+                style={{ filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.3))' }}
+              />
+            </div>
+            
             {/* Badge */}
             <div 
-              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-semibold mb-8 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-semibold mb-6 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
               style={{ transform: `translateY(${isLoaded ? mousePosition.y * 5 : 16}px)` }}
             >
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
               </span>
-              <span className="text-white">Premium Wellness & Recovery Center</span>
+              <span className="text-white">Premium Ice Bath Center</span>
               <Sparkles className="w-4 h-4 text-primary" />
             </div>
             
