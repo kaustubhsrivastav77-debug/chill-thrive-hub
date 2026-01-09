@@ -1,5 +1,6 @@
 import { Shield, Users, Sparkles, HeartPulse, CheckCircle2 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
 const features = [
   {
@@ -63,19 +64,13 @@ export function WhyChillThrive() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Content */}
           <div className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-xs uppercase tracking-wider mb-6">
-              <CheckCircle2 className="w-4 h-4" />
-              Why Choose Us
-            </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Experience the{" "}
-              <span className="text-primary">ChillThrive</span>{" "}
-              Difference
-            </h2>
-            <p className="text-muted-foreground text-base sm:text-lg md:text-xl mb-10 sm:mb-12 leading-relaxed max-w-xl">
-              We're not just another wellness center. We're a movement dedicated to helping 
-              you unlock your body's natural healing abilities through the power of temperature therapy.
-            </p>
+            <SectionHeader
+              badge="Why Choose Us"
+              title="Experience the ChillThrive Difference"
+              subtitle="We're not just another wellness center. We're a movement dedicated to helping you unlock your body's natural healing abilities through the power of temperature therapy."
+              align="left"
+              className="mb-10 sm:mb-12"
+            />
 
             <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
               {features.map((feature, index) => (
