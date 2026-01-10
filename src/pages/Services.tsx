@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { ServiceDetailSkeleton, ServiceCardSkeleton } from "@/components/ui/PageSkeleton";
+import { ServiceDetailSkeleton } from "@/components/ui/PageSkeleton";
 import { InteractiveCard, ParallaxImageCard } from "@/components/ui/InteractiveCard";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { useMouseParallax } from "@/hooks/useParallax";
-import { Skeleton } from "@/components/ui/skeleton";
-import { 
+import {
   Snowflake, 
   Waves, 
   CloudFog, 

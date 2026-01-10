@@ -49,8 +49,8 @@ export function ServiceCardSkeleton() {
 export function ServiceDetailSkeleton() {
   return (
     <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-      <div className="rounded-2xl overflow-hidden">
-        <Skeleton className="aspect-[4/3] w-full" />
+      <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl">
+        <Skeleton className="w-full h-64 sm:h-80 md:h-96" />
       </div>
       <div className="space-y-4">
         <Skeleton className="h-10 w-2/3 rounded-lg" />
