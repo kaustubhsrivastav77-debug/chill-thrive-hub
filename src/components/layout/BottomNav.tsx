@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, Grid3X3, Images, BookOpen, Calendar, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -14,6 +15,7 @@ const navItems = [
 export function BottomNav() {
   const location = useLocation();
   const { user } = useAuth();
+  const haptic = useHapticFeedback();
 
   // Don't show on admin pages
   if (location.pathname.startsWith("/admin")) {
@@ -31,6 +33,7 @@ export function BottomNav() {
             <Link
               key={item.href}
               to={item.href}
+              onClick={() => haptic.selection()}
               className={cn(
                 "relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-300",
                 isActive ? "text-primary" : "text-muted-foreground"
@@ -84,6 +87,7 @@ export function BottomNav() {
         {/* Account/Profile link */}
         <Link
           to={user ? "/admin" : "/auth"}
+          onClick={() => haptic.selection()}
           className={cn(
             "relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-300",
             (location.pathname === "/auth" || location.pathname.startsWith("/admin")) 
