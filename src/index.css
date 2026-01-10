@@ -250,3 +250,22 @@ html {
   background: hsl(210 50% 10% / 0.4);
   border: 1px solid hsl(0 0% 100% / 0.1);
 }
+
+/* Theme transition - smooth color changes */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: 
+    background-color 0.5s ease-out,
+    border-color 0.5s ease-out,
+    color 0.3s ease-out,
+    fill 0.3s ease-out,
+    stroke 0.3s ease-out,
+    box-shadow 0.5s ease-out !important;
+}
+
+/* Prevent transition on elements that shouldn't animate */
+.theme-transitioning .no-theme-transition {
+  transition: none !important;
+}

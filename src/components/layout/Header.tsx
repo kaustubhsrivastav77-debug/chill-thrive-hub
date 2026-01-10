@@ -65,6 +65,9 @@ export function Header() {
   }, [location.pathname]);
 
   const toggleTheme = () => {
+    // Add transitioning class for smooth color transitions
+    document.documentElement.classList.add("theme-transitioning");
+    
     if (isDark) {
       document.documentElement.classList.remove("dark");
       localStorage.setItem("theme", "light");
@@ -74,6 +77,11 @@ export function Header() {
       localStorage.setItem("theme", "dark");
       setIsDark(true);
     }
+    
+    // Remove transitioning class after animation completes
+    setTimeout(() => {
+      document.documentElement.classList.remove("theme-transitioning");
+    }, 500);
   };
 
   // Smooth scroll to section or navigate to page
@@ -194,11 +202,11 @@ export function Header() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Theme Toggle */}
+            {/* Theme Toggle with enhanced animation */}
             <button
               onClick={toggleTheme}
               className={cn(
-                "relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
+                "relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 overflow-hidden group",
                 scrolled 
                   ? "bg-muted hover:bg-muted/80 text-foreground" 
                   : showWhiteText
@@ -207,14 +215,32 @@ export function Header() {
               )}
               aria-label="Toggle theme"
             >
+              {/* Animated background */}
+              <div className={cn(
+                "absolute inset-0 rounded-full transition-all duration-500",
+                isDark 
+                  ? "bg-gradient-to-br from-indigo-500/20 to-purple-500/20" 
+                  : "bg-gradient-to-br from-amber-500/20 to-orange-500/20"
+              )} />
+              
+              {/* Sun icon */}
               <Sun className={cn(
-                "w-5 h-5 absolute transition-all duration-500",
-                isDark ? "opacity-0 rotate-90 scale-0" : "opacity-100 rotate-0 scale-100"
+                "w-5 h-5 absolute transition-all duration-500 ease-out",
+                isDark 
+                  ? "opacity-0 rotate-90 scale-0" 
+                  : "opacity-100 rotate-0 scale-100"
               )} />
+              
+              {/* Moon icon */}
               <Moon className={cn(
-                "w-5 h-5 absolute transition-all duration-500",
-                isDark ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-0"
+                "w-5 h-5 absolute transition-all duration-500 ease-out",
+                isDark 
+                  ? "opacity-100 rotate-0 scale-100" 
+                  : "opacity-0 -rotate-90 scale-0"
               )} />
+              
+              {/* Ripple effect on click */}
+              <span className="absolute inset-0 rounded-full bg-current opacity-0 group-active:opacity-10 transition-opacity" />
             </button>
 
             {/* Auth Dropdown / Sign In - Desktop */}
