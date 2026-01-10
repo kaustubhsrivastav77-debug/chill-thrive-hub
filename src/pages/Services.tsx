@@ -237,12 +237,12 @@ const ServicesPage = () => {
                       </div>
                     )}
 
-                    <MagneticButton asChild size="lg" className="shadow-lg">
-                      <Link to="/booking">
+                    <Link to="/booking">
+                      <MagneticButton size="lg" className="shadow-lg">
                         Book Now
                         <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                      </Link>
-                    </MagneticButton>
+                      </MagneticButton>
+                    </Link>
                   </div>
                 </div>
               );
@@ -318,9 +318,11 @@ const ServicesPage = () => {
                       </div>
                     </div>
 
-                    <MagneticButton asChild className="w-full h-12 shadow-md">
-                      <Link to="/booking">Book This Combo</Link>
-                    </MagneticButton>
+                    <Link to="/booking" className="block">
+                      <MagneticButton className="w-full h-12 shadow-md">
+                        Book This Combo
+                      </MagneticButton>
+                    </Link>
                   </CardContent>
                 </InteractiveCard>
               ))}
@@ -394,9 +396,11 @@ const ServicesPage = () => {
                       </div>
                     </div>
 
-                    <MagneticButton asChild className="w-full h-12 shadow-md">
-                      <Link to="/booking">Book This Combo</Link>
-                    </MagneticButton>
+                    <Link to="/booking" className="block">
+                      <MagneticButton className="w-full h-12 shadow-md">
+                        Book This Combo
+                      </MagneticButton>
+                    </Link>
                   </CardContent>
                 </InteractiveCard>
               ))}
