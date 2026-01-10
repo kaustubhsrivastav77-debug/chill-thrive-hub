@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, RefObject } from "react";
 
 interface ParallaxConfig {
   speed?: number;
@@ -6,7 +6,24 @@ interface ParallaxConfig {
   disabled?: boolean;
 }
 
-export function useParallax({ speed = 0.5, direction = "up", disabled = false }: ParallaxConfig = {}) {
+interface MouseParallaxConfig {
+  strength?: number;
+  disabled?: boolean;
+}
+
+interface ParallaxResult {
+  offset: number;
+  elementRef: RefObject<HTMLElement | null>;
+}
+
+interface MouseParallaxResult {
+  x: number;
+  y: number;
+  mouseX: number;
+  mouseY: number;
+}
+
+export function useParallax({ speed = 0.5, direction = "up", disabled = false }: ParallaxConfig = {}): ParallaxResult {
   const [offset, setOffset] = useState(0);
   const elementRef = useRef<HTMLElement | null>(null);
   const ticking = useRef(false);
@@ -37,6 +54,31 @@ export function useParallax({ speed = 0.5, direction = "up", disabled = false }:
   }, [handleScroll, disabled]);
 
   return { offset, elementRef };
+}
+
+export function useMouseParallax({ strength = 0.02, disabled = false }: MouseParallaxConfig = {}): MouseParallaxResult {
+  const [position, setPosition] = useState({ x: 0, y: 0, mouseX: 0.5, mouseY: 0.5 });
+
+  useEffect(() => {
+    if (disabled) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 2;
+      const y = (e.clientY / window.innerHeight - 0.5) * 2;
+      
+      setPosition({
+        x: x * strength * 100,
+        y: y * strength * 100,
+        mouseX: e.clientX / window.innerWidth,
+        mouseY: e.clientY / window.innerHeight,
+      });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [strength, disabled]);
+
+  return position;
 }
 
 export function useScrollProgress() {
@@ -95,4 +137,31 @@ export function useElementInView(threshold = 0.1) {
   }, [threshold]);
 
   return { isInView, scrollProgress, elementRef };
+}
+
+// Hook for parallax images that tracks element position
+export function useImageParallax(speed = 0.3) {
+  const [transform, setTransform] = useState(0);
+  const elementRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!elementRef.current) return;
+      
+      const rect = elementRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const elementCenter = rect.top + rect.height / 2;
+      const viewportCenter = windowHeight / 2;
+      const offset = (elementCenter - viewportCenter) * speed;
+      
+      setTransform(offset);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [speed]);
+
+  return { transform, elementRef };
 }

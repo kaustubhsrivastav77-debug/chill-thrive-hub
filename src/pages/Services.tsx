@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { ServiceCardSkeleton } from "@/components/ui/PageSkeleton";
+import { InteractiveCard, ParallaxImageCard } from "@/components/ui/InteractiveCard";
+import { MagneticButton } from "@/components/ui/MagneticButton";
+import { useMouseParallax } from "@/hooks/useParallax";
 import { 
   Snowflake, 
   Waves, 
@@ -91,6 +94,7 @@ const ServicesPage = () => {
   const [services, setServices] = useState<Service[]>(fallbackServices);
   const [combos, setCombos] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const mouseParallax = useMouseParallax({ strength: 0.01 });
 
   useEffect(() => {
     fetchServices();
@@ -113,18 +117,39 @@ const ServicesPage = () => {
 
   return (
     <Layout>
-      {/* Hero */}
-      <section className="py-16 sm:py-20 md:py-28 bg-gradient-to-b from-primary/5 to-background">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Hero with parallax */}
+      <section className="relative py-16 sm:py-20 md:py-28 bg-gradient-to-b from-primary/5 to-background overflow-hidden">
+        {/* Parallax background elements */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div 
+            className="absolute -top-20 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
+            style={{ transform: `translate(${mouseParallax.x}px, ${mouseParallax.y}px)` }}
+          />
+          <div 
+            className="absolute -bottom-20 -left-20 w-80 h-80 bg-accent/10 rounded-full blur-3xl"
+            style={{ transform: `translate(${-mouseParallax.x}px, ${-mouseParallax.y}px)` }}
+          />
+        </div>
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-xs uppercase tracking-wider mb-4">
+            <span 
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-xs uppercase tracking-wider mb-4"
+              style={{ transform: `translateY(${mouseParallax.y * 0.5}px)` }}
+            >
               <Star className="w-3.5 h-3.5" />
               Our Services
             </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+            <h1 
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6"
+              style={{ transform: `translateY(${mouseParallax.y * 0.3}px)` }}
+            >
               Premium Recovery Therapies
             </h1>
-            <p className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-2xl mx-auto">
+            <p 
+              className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-2xl mx-auto"
+              style={{ transform: `translateY(${mouseParallax.y * 0.2}px)` }}
+            >
               Choose from our range of science-backed wellness services designed 
               to help you recover faster, feel better, and perform at your peak.
             </p>
@@ -163,22 +188,20 @@ const ServicesPage = () => {
                   }`}
                 >
                   <div className={index % 2 === 1 ? "lg:order-2" : ""}>
-                    <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden group shadow-2xl">
-                      <img
-                        src={image}
-                        alt={service.name}
-                        className="w-full aspect-[4/3] object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
-                      <div className="absolute top-4 sm:top-6 left-4 sm:left-6 w-14 sm:w-16 h-14 sm:h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                    <ParallaxImageCard
+                      imageSrc={image}
+                      imageAlt={service.name}
+                      parallaxSpeed={0.15}
+                    >
+                      <div className="absolute top-4 sm:top-6 left-4 sm:left-6 w-14 sm:w-16 h-14 sm:h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg z-20">
                         <IconComponent className="w-7 sm:w-8 h-7 sm:h-8 text-white" />
                       </div>
                       {service.badge && (
-                        <Badge className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-accent">
+                        <Badge className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-accent z-20">
                           {service.badge}
                         </Badge>
                       )}
-                    </div>
+                    </ParallaxImageCard>
                   </div>
 
                   <div className={index % 2 === 1 ? "lg:order-1" : ""}>
@@ -222,12 +245,12 @@ const ServicesPage = () => {
                       </div>
                     )}
 
-                    <Button asChild size="lg" className="shadow-lg">
+                    <MagneticButton asChild size="lg" className="shadow-lg">
                       <Link to="/booking">
                         Book Now
-                        <ArrowRight className="ml-2 w-5 h-5" />
+                        <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                       </Link>
-                    </Button>
+                    </MagneticButton>
                   </div>
                 </div>
               );
@@ -257,9 +280,10 @@ const ServicesPage = () => {
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {combos.map((combo, index) => (
-                <Card
+                <InteractiveCard
                   key={combo.id}
-                  className={`relative border-0 shadow-xl hover:shadow-2xl transition-all duration-300 ${
+                  hoverEffect="tilt"
+                  className={`relative border-0 shadow-xl ${
                     index === 1 ? "lg:scale-105 lg:shadow-2xl" : ""
                   }`}
                 >
@@ -302,11 +326,11 @@ const ServicesPage = () => {
                       </div>
                     </div>
 
-                    <Button asChild className="w-full h-12 shadow-md">
+                    <MagneticButton asChild className="w-full h-12 shadow-md">
                       <Link to="/booking">Book This Combo</Link>
-                    </Button>
+                    </MagneticButton>
                   </CardContent>
-                </Card>
+                </InteractiveCard>
               ))}
             </div>
           </div>
@@ -336,9 +360,10 @@ const ServicesPage = () => {
                 { id: "2", name: "Ice + Jacuzzi Combo", services: ["Ice Bath", "Jacuzzi"], originalPrice: 2700, price: 2299, duration: 90, badge: null },
                 { id: "3", name: "Full Recovery Combo", services: ["Ice Bath", "Steam", "Jacuzzi"], originalPrice: 3500, price: 2999, duration: 120, badge: "Best Value" },
               ].map((combo, index) => (
-                <Card
+                <InteractiveCard
                   key={combo.id}
-                  className={`relative border-0 shadow-xl hover:shadow-2xl transition-all duration-300 ${
+                  hoverEffect="tilt"
+                  className={`relative border-0 shadow-xl ${
                     index === 2 ? "lg:scale-105 lg:shadow-2xl" : ""
                   }`}
                 >
@@ -377,11 +402,11 @@ const ServicesPage = () => {
                       </div>
                     </div>
 
-                    <Button asChild className="w-full h-12 shadow-md">
+                    <MagneticButton asChild className="w-full h-12 shadow-md">
                       <Link to="/booking">Book This Combo</Link>
-                    </Button>
+                    </MagneticButton>
                   </CardContent>
-                </Card>
+                </InteractiveCard>
               ))}
             </div>
           </div>
