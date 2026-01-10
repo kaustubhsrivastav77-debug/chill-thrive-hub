@@ -1,9 +1,18 @@
-import { useState, useEffect, useRef } from "react";
-import { Star, Quote, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Star, Quote } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { TestimonialSkeleton } from "@/components/ui/PageSkeleton";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 
 interface Testimonial {
   id: string;
@@ -35,9 +44,15 @@ const fallbackTestimonials = [
 
 export function TestimonialsSection() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>(fallbackTestimonials);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [isVisible, setIsVisible] = useState(false);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
   const sectionRef = useRef<HTMLElement>(null);
+
+  const autoplayPlugin = useRef(
+    Autoplay({ delay: 4000, stopOnInteraction: true, stopOnMouseEnter: true })
+  );
 
   useEffect(() => {
     fetchTestimonials();
@@ -60,15 +75,17 @@ export function TestimonialsSection() {
     return () => observer.disconnect();
   }, []);
 
-  // Auto-advance carousel
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [testimonials.length]);
+    if (!api) return;
+
+    setCurrent(api.selectedScrollSnap());
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
 
   const fetchTestimonials = async () => {
+    setIsLoading(true);
     const { data } = await supabase
       .from("testimonials")
       .select("id, customer_name, feedback, rating")
@@ -79,22 +96,7 @@ export function TestimonialsSection() {
     if (data && data.length > 0) {
       setTestimonials(data);
     }
-  };
-
-  const next = () => {
-    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-  };
-
-  const prev = () => {
-    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  };
-
-  const getVisibleTestimonials = () => {
-    const result = [];
-    for (let i = 0; i < 3; i++) {
-      result.push(testimonials[(currentIndex + i) % testimonials.length]);
-    }
-    return result;
+    setIsLoading(false);
   };
 
   const getInitials = (name: string) => {
@@ -105,6 +107,10 @@ export function TestimonialsSection() {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const scrollTo = useCallback((index: number) => {
+    api?.scrollTo(index);
+  }, [api]);
 
   return (
     <section ref={sectionRef} className="py-20 sm:py-28 md:py-36 relative overflow-hidden bg-background">
@@ -123,95 +129,91 @@ export function TestimonialsSection() {
 
         {/* Testimonials Carousel */}
         <div className={`relative transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          {/* Navigation Buttons */}
-          {testimonials.length > 3 && (
-            <>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={prev}
-                className="absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 z-10 hidden md:flex rounded-full shadow-lg bg-card border-border/50 hover:bg-muted hover:border-primary/30 w-12 h-12"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={next}
-                className="absolute -right-4 lg:-right-6 top-1/2 -translate-y-1/2 z-10 hidden md:flex rounded-full shadow-lg bg-card border-border/50 hover:bg-muted hover:border-primary/30 w-12 h-12"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-            </>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+              {[...Array(3)].map((_, i) => (
+                <TestimonialSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <Carousel
+              setApi={setApi}
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              plugins={[autoplayPlugin.current]}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-4">
+                {testimonials.map((testimonial) => (
+                  <CarouselItem key={testimonial.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                    <Card className="group relative bg-card border border-border/50 hover:border-primary/30 hover:shadow-2xl transition-all duration-500 overflow-hidden h-full">
+                      {/* Decorative gradient */}
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+                      
+                      <CardContent className="p-6 sm:p-8">
+                        {/* Quote Icon */}
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                          <Quote className="w-7 h-7 text-primary" />
+                        </div>
+                        
+                        {/* Feedback */}
+                        <p className="text-foreground mb-6 leading-relaxed text-base sm:text-lg line-clamp-4">
+                          "{testimonial.feedback}"
+                        </p>
+                        
+                        {/* Rating */}
+                        <div className="flex items-center gap-1 mb-6">
+                          {Array.from({ length: testimonial.rating || 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className="w-5 h-5 fill-amber-400 text-amber-400"
+                            />
+                          ))}
+                        </div>
+                        
+                        {/* Author */}
+                        <div className="flex items-center gap-4 pt-6 border-t border-border/50">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                            {getInitials(testimonial.customer_name)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-foreground text-base">
+                              {testimonial.customer_name}
+                            </div>
+                            <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-green-500" />
+                              Verified Customer
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex -left-4 lg:-left-6" />
+              <CarouselNext className="hidden md:flex -right-4 lg:-right-6" />
+            </Carousel>
           )}
 
-          {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {getVisibleTestimonials().map((testimonial, index) => (
-              <Card
-                key={`${testimonial.id}-${index}`}
-                className={`group relative bg-card border border-border/50 hover:border-primary/30 hover:shadow-2xl transition-all duration-500 overflow-hidden ${
-                  index === 1 ? "md:scale-105 md:shadow-xl md:border-primary/20 md:z-10" : ""
-                } ${index === 2 ? "hidden lg:block" : ""} ${index === 1 ? "hidden md:block" : ""}`}
-              >
-                {/* Decorative gradient */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
-                
-                <CardContent className="p-6 sm:p-8">
-                  {/* Quote Icon */}
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <Quote className="w-7 h-7 text-primary" />
-                  </div>
-                  
-                  {/* Feedback */}
-                  <p className="text-foreground mb-6 leading-relaxed text-base sm:text-lg line-clamp-4">
-                    "{testimonial.feedback}"
-                  </p>
-                  
-                  {/* Rating */}
-                  <div className="flex items-center gap-1 mb-6">
-                    {Array.from({ length: testimonial.rating || 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className="w-5 h-5 fill-amber-400 text-amber-400"
-                      />
-                    ))}
-                  </div>
-                  
-                  {/* Author */}
-                  <div className="flex items-center gap-4 pt-6 border-t border-border/50">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                      {getInitials(testimonial.customer_name)}
-                    </div>
-                    <div>
-                      <div className="font-bold text-foreground text-base">
-                        {testimonial.customer_name}
-                      </div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-green-500" />
-                        Verified Customer
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
           {/* Navigation Dots */}
-          <div className="flex justify-center gap-2 mt-10">
-            {testimonials.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`h-2.5 rounded-full transition-all duration-300 ${
-                  index === currentIndex
-                    ? "bg-primary w-8"
-                    : "bg-muted-foreground/30 hover:bg-muted-foreground/50 w-2.5"
-                }`}
-              />
-            ))}
-          </div>
+          {!isLoading && (
+            <div className="flex justify-center gap-2 mt-10">
+              {testimonials.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => scrollTo(index)}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    index === current
+                      ? "bg-primary w-8"
+                      : "bg-muted-foreground/30 hover:bg-muted-foreground/50 w-2.5"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>
