@@ -3,10 +3,11 @@ import { cn } from "@/lib/utils";
 import { Button, ButtonProps } from "./button";
 import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 
-interface MagneticButtonProps extends ButtonProps {
+interface MagneticButtonProps extends Omit<ButtonProps, 'asChild'> {
   strength?: number;
   magneticStrength?: number;
   hapticPattern?: "light" | "medium" | "heavy" | "selection";
+  children: React.ReactNode;
 }
 
 export const MagneticButton = React.forwardRef<HTMLButtonElement, MagneticButtonProps>(
