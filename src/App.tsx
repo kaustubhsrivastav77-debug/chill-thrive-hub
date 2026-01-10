@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ReactNode, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Booking from "./pages/Booking";
@@ -26,50 +25,59 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Page transition wrapper with loading spinner
+// Enhanced page transition wrapper with smooth animations
 function PageTransition({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const [isEntering, setIsEntering] = useState(true);
   const [currentChildren, setCurrentChildren] = useState(children);
+  const [currentKey, setCurrentKey] = useState(location.pathname);
 
   useEffect(() => {
-    setIsLoading(true);
-    setIsAnimating(true);
-    
-    const loadTimer = setTimeout(() => {
+    if (location.pathname !== currentKey) {
+      // Start exit animation
+      setIsExiting(true);
+      
+      const exitTimer = setTimeout(() => {
+        setCurrentChildren(children);
+        setCurrentKey(location.pathname);
+        setIsExiting(false);
+        setIsEntering(true);
+        
+        // Reset entering state after animation
+        const enterTimer = setTimeout(() => {
+          setIsEntering(false);
+        }, 400);
+        
+        return () => clearTimeout(enterTimer);
+      }, 250);
+      
+      return () => clearTimeout(exitTimer);
+    } else {
       setCurrentChildren(children);
-      setIsLoading(false);
-    }, 200);
-    
-    const animTimer = setTimeout(() => {
-      setIsAnimating(false);
-    }, 350);
-    
-    return () => {
-      clearTimeout(loadTimer);
-      clearTimeout(animTimer);
-    };
-  }, [location.pathname]);
+      const timer = setTimeout(() => setIsEntering(false), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname, children, currentKey]);
 
   return (
     <>
-      {/* Loading Spinner Overlay */}
+      {/* Page loading indicator */}
       <div 
-        className={`fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-opacity duration-200 ${
-          isLoading ? "opacity-100" : "opacity-0 pointer-events-none"
+        className={`fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary z-[100] transition-all duration-300 ${
+          isExiting ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0"
         }`}
-      >
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <span className="text-sm font-medium text-muted-foreground">Loading...</span>
-        </div>
-      </div>
+        style={{ transformOrigin: "left" }}
+      />
       
-      {/* Page Content */}
+      {/* Page Content with animations */}
       <div
         className={`transition-all duration-300 ease-out ${
-          isAnimating ? "opacity-0 scale-[0.99]" : "opacity-100 scale-100"
+          isExiting 
+            ? "opacity-0 translate-x-4 scale-[0.99]" 
+            : isEntering 
+              ? "opacity-100 translate-x-0 scale-100 animate-fade-in" 
+              : "opacity-100 translate-x-0 scale-100"
         }`}
       >
         {currentChildren}

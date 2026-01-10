@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Star, Quote } from "lucide-react";
+import { Star, Quote, Play } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TestimonialSkeleton } from "@/components/ui/PageSkeleton";
+import { VideoPlayer } from "@/components/ui/VideoPlayer";
 import {
   Carousel,
   CarouselContent,
@@ -19,26 +20,32 @@ interface Testimonial {
   customer_name: string;
   feedback: string;
   rating: number | null;
+  is_video?: boolean;
+  video_url?: string | null;
+  video_thumbnail?: string | null;
 }
 
-const fallbackTestimonials = [
+const fallbackTestimonials: Testimonial[] = [
   {
     id: "1",
     customer_name: "Rahul Sharma",
     feedback: "The ice bath therapy at ChillThrive has completely transformed my recovery routine. I feel more energized and my muscle soreness has reduced significantly.",
     rating: 5,
+    is_video: false,
   },
   {
     id: "2",
     customer_name: "Priya Patel",
     feedback: "As an athlete, recovery is crucial. ChillThrive's combo packages give me the perfect blend of cold and heat therapy. Highly recommended!",
     rating: 5,
+    is_video: false,
   },
   {
     id: "3",
     customer_name: "Amit Kumar",
     feedback: "The steam bath sessions help me decompress after long work weeks. The staff is professional and the facility is top-notch.",
     rating: 5,
+    is_video: false,
   },
 ];
 
@@ -88,7 +95,7 @@ export function TestimonialsSection() {
     setIsLoading(true);
     const { data } = await supabase
       .from("testimonials")
-      .select("id, customer_name, feedback, rating")
+      .select("id, customer_name, feedback, rating, is_video, video_url, video_thumbnail")
       .eq("is_visible", true)
       .order("display_order", { ascending: true })
       .limit(6);
@@ -148,48 +155,86 @@ export function TestimonialsSection() {
               <CarouselContent className="-ml-4">
                 {testimonials.map((testimonial) => (
                   <CarouselItem key={testimonial.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                    <Card className="group relative bg-card border border-border/50 hover:border-primary/30 hover:shadow-2xl transition-all duration-500 overflow-hidden h-full">
-                      {/* Decorative gradient */}
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
-                      
-                      <CardContent className="p-6 sm:p-8">
-                        {/* Quote Icon */}
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                          <Quote className="w-7 h-7 text-primary" />
-                        </div>
-                        
-                        {/* Feedback */}
-                        <p className="text-foreground mb-6 leading-relaxed text-base sm:text-lg line-clamp-4">
-                          "{testimonial.feedback}"
-                        </p>
-                        
-                        {/* Rating */}
-                        <div className="flex items-center gap-1 mb-6">
-                          {Array.from({ length: testimonial.rating || 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              className="w-5 h-5 fill-amber-400 text-amber-400"
-                            />
-                          ))}
-                        </div>
-                        
-                        {/* Author */}
-                        <div className="flex items-center gap-4 pt-6 border-t border-border/50">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                            {getInitials(testimonial.customer_name)}
-                          </div>
-                          <div>
-                            <div className="font-bold text-foreground text-base">
-                              {testimonial.customer_name}
+                    {testimonial.is_video && testimonial.video_url ? (
+                      // Video Testimonial Card
+                      <Card className="group relative bg-card border border-border/50 hover:border-primary/30 hover:shadow-2xl transition-all duration-500 overflow-hidden h-full">
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+                        <CardContent className="p-4">
+                          <VideoPlayer
+                            videoUrl={testimonial.video_url}
+                            thumbnailUrl={testimonial.video_thumbnail || undefined}
+                            title={`${testimonial.customer_name}'s testimonial`}
+                            aspectRatio="video"
+                            className="mb-4"
+                          />
+                          
+                          {/* Author */}
+                          <div className="flex items-center gap-4 pt-4 border-t border-border/50">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xs shadow-lg">
+                              {getInitials(testimonial.customer_name)}
                             </div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-green-500" />
-                              Verified Customer
+                            <div className="flex-1">
+                              <div className="font-bold text-foreground text-sm">
+                                {testimonial.customer_name}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {Array.from({ length: testimonial.rating || 5 }).map((_, i) => (
+                                  <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">
+                              <Play className="w-3 h-3" fill="currentColor" />
+                              Video
                             </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      // Text Testimonial Card
+                      <Card className="group relative bg-card border border-border/50 hover:border-primary/30 hover:shadow-2xl transition-all duration-500 overflow-hidden h-full">
+                        {/* Decorative gradient */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+                        
+                        <CardContent className="p-6 sm:p-8">
+                          {/* Quote Icon */}
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <Quote className="w-7 h-7 text-primary" />
+                          </div>
+                          
+                          {/* Feedback */}
+                          <p className="text-foreground mb-6 leading-relaxed text-base sm:text-lg line-clamp-4">
+                            "{testimonial.feedback}"
+                          </p>
+                          
+                          {/* Rating */}
+                          <div className="flex items-center gap-1 mb-6">
+                            {Array.from({ length: testimonial.rating || 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className="w-5 h-5 fill-amber-400 text-amber-400"
+                              />
+                            ))}
+                          </div>
+                          
+                          {/* Author */}
+                          <div className="flex items-center gap-4 pt-6 border-t border-border/50">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                              {getInitials(testimonial.customer_name)}
+                            </div>
+                            <div>
+                              <div className="font-bold text-foreground text-base">
+                                {testimonial.customer_name}
+                              </div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-green-500" />
+                                Verified Customer
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </CarouselItem>
                 ))}
               </CarouselContent>
