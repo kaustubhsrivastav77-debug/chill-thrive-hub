@@ -4,11 +4,12 @@ import { ArrowRight, Play, Star, Users, Award, Sparkles } from "lucide-react";
 import heroImage from "@/assets/hero-ice-bath.jpg";
 import logo from "@/assets/logo.png";
 import { useEffect, useState, useCallback } from "react";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 
 const stats = [
-  { icon: Users, value: "500+", label: "Happy Clients" },
-  { icon: Star, value: "4.9", label: "Rating" },
-  { icon: Award, value: "3+", label: "Years" },
+  { icon: Users, value: 500, suffix: "+", label: "Happy Clients" },
+  { icon: Star, value: 4.9, suffix: "", decimals: 1, label: "Rating" },
+  { icon: Award, value: 3, suffix: "+", label: "Years" },
 ];
 
 export function HeroSection() {
@@ -205,7 +206,7 @@ export function HeroSection() {
             </div>
           </div>
 
-          {/* Stats Bar with staggered parallax */}
+          {/* Stats Bar with animated counters */}
           <div 
             className={`mt-16 sm:mt-20 transition-all duration-700 delay-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
@@ -223,7 +224,14 @@ export function HeroSection() {
                     <stat.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">{stat.value}</p>
+                    <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
+                      <AnimatedCounter 
+                        end={stat.value} 
+                        suffix={stat.suffix} 
+                        decimals={stat.decimals || 0}
+                        duration={2000}
+                      />
+                    </p>
                     <p className="text-xs sm:text-sm text-white/70">{stat.label}</p>
                   </div>
                 </div>
