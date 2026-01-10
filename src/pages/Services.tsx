@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { ServiceCardSkeleton } from "@/components/ui/PageSkeleton";
 import { 
   Snowflake, 
   Waves, 
@@ -89,12 +90,14 @@ const getServiceImage = (name: string, imageUrl: string | null) => {
 const ServicesPage = () => {
   const [services, setServices] = useState<Service[]>(fallbackServices);
   const [combos, setCombos] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchServices();
   }, []);
 
   const fetchServices = async () => {
+    setIsLoading(true);
     const { data } = await supabase
       .from("services")
       .select("*")
@@ -105,6 +108,7 @@ const ServicesPage = () => {
       setServices(data.filter((s) => !s.is_combo));
       setCombos(data.filter((s) => s.is_combo));
     }
+    setIsLoading(false);
   };
 
   return (
@@ -131,6 +135,21 @@ const ServicesPage = () => {
       {/* Individual Services */}
       <section className="py-12 sm:py-16 md:py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          {isLoading ? (
+            <div className="space-y-16 sm:space-y-20 md:space-y-24">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+                  <ServiceCardSkeleton />
+                  <div className="space-y-4">
+                    <div className="h-8 w-2/3 bg-muted rounded animate-pulse" />
+                    <div className="h-4 w-full bg-muted rounded animate-pulse" />
+                    <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+                    <div className="h-10 w-32 bg-muted rounded animate-pulse mt-6" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className="space-y-16 sm:space-y-20 md:space-y-24">
             {services.map((service, index) => {
               const IconComponent = getServiceIcon(service.name);
@@ -214,6 +233,7 @@ const ServicesPage = () => {
               );
             })}
           </div>
+          )}
         </div>
       </section>
 
