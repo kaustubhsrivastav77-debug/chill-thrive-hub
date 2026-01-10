@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { ServiceCardSkeleton } from "@/components/ui/PageSkeleton";
+import { ServiceDetailSkeleton, ServiceCardSkeleton } from "@/components/ui/PageSkeleton";
 import { InteractiveCard, ParallaxImageCard } from "@/components/ui/InteractiveCard";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { useMouseParallax } from "@/hooks/useParallax";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Snowflake, 
   Waves, 
@@ -163,15 +164,7 @@ const ServicesPage = () => {
           {isLoading ? (
             <div className="space-y-16 sm:space-y-20 md:space-y-24">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-                  <ServiceCardSkeleton />
-                  <div className="space-y-4">
-                    <div className="h-8 w-2/3 bg-muted rounded animate-pulse" />
-                    <div className="h-4 w-full bg-muted rounded animate-pulse" />
-                    <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
-                    <div className="h-10 w-32 bg-muted rounded animate-pulse mt-6" />
-                  </div>
-                </div>
+                <ServiceDetailSkeleton key={i} />
               ))}
             </div>
           ) : (

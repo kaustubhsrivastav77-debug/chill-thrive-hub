@@ -141,7 +141,9 @@ const Gallery = () => {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {[...Array(8)].map((_, i) => (
-                <Skeleton key={i} className="aspect-square rounded-2xl" />
+                <div key={i} className="aspect-square rounded-2xl overflow-hidden">
+                  <Skeleton className="w-full h-full" />
+                </div>
               ))}
             </div>
           ) : filteredImages.length === 0 ? (
