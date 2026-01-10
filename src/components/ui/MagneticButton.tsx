@@ -1,18 +1,21 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button, ButtonProps } from "./button";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 
 interface MagneticButtonProps extends ButtonProps {
   strength?: number;
   magneticStrength?: number;
+  hapticPattern?: "light" | "medium" | "heavy" | "selection";
 }
 
 export const MagneticButton = React.forwardRef<HTMLButtonElement, MagneticButtonProps>(
-  ({ className, children, strength = 0.4, magneticStrength = 0.15, ...props }, ref) => {
+  ({ className, children, strength = 0.4, magneticStrength = 0.15, hapticPattern = "light", onClick, ...props }, ref) => {
     const [position, setPosition] = React.useState({ x: 0, y: 0 });
     const [textPosition, setTextPosition] = React.useState({ x: 0, y: 0 });
     const [isHovered, setIsHovered] = React.useState(false);
     const buttonRef = React.useRef<HTMLButtonElement>(null);
+    const haptic = useHapticFeedback();
 
     const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
       if (!buttonRef.current) return;
@@ -41,6 +44,11 @@ export const MagneticButton = React.forwardRef<HTMLButtonElement, MagneticButton
       setIsHovered(false);
     };
 
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      haptic.trigger({ pattern: hapticPattern });
+      onClick?.(e);
+    };
+
     return (
       <Button
         ref={(node) => {
@@ -59,6 +67,7 @@ export const MagneticButton = React.forwardRef<HTMLButtonElement, MagneticButton
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
         {...props}
       >
         {/* Magnetic glow effect */}
