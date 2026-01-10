@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Snowflake, 
   Waves, 
@@ -60,6 +61,7 @@ const BookingPage = () => {
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,6 +69,7 @@ const BookingPage = () => {
   }, []);
 
   const fetchServicesAndSlots = async () => {
+    setIsDataLoading(true);
     const [servicesRes, slotsRes] = await Promise.all([
       supabase.from("services").select("id, name, price, duration_minutes").eq("is_active", true),
       supabase.from("time_slots").select("slot_time").eq("is_active", true).order("slot_time"),
@@ -88,6 +91,7 @@ const BookingPage = () => {
     if (slotsRes.data && slotsRes.data.length > 0) {
       setTimeSlots(slotsRes.data.map((s) => s.slot_time));
     }
+    setIsDataLoading(false);
   };
 
   const selectedServiceData = services.find((s) => s.id === selectedService);
@@ -269,40 +273,53 @@ const BookingPage = () => {
             <CardContent className="p-4 sm:p-6 md:p-8">
               {/* Step 1: Service Selection */}
               {step === 1 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                  {services.map((service) => {
-                    const IconComponent = service.icon;
-                    return (
-                      <button
-                        key={service.id}
-                        onClick={() => setSelectedService(service.id)}
-                        className={cn(
-                          "p-4 sm:p-5 rounded-xl border-2 text-left transition-all hover:border-primary group",
-                          selectedService === service.id
-                            ? "border-primary bg-primary/5 shadow-lg"
-                            : "border-border hover:shadow-md"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-colors",
-                          selectedService === service.id ? "bg-primary text-white" : "bg-primary/10 text-primary"
-                        )}>
-                          <IconComponent className="w-6 h-6" />
-                        </div>
-                        <h3 className="font-semibold text-foreground mb-1 text-sm sm:text-base">
-                          {service.name}
-                        </h3>
-                        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground mb-2">
-                          <Clock className="w-3.5 h-3.5" />
-                          {service.duration}
-                        </div>
-                        <div className="text-lg sm:text-xl font-bold text-primary">
-                          ₹{service.price}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                isDataLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="p-5 rounded-xl border-2 border-border/50 space-y-3">
+                        <Skeleton className="h-12 w-12 rounded-xl" />
+                        <Skeleton className="h-5 w-3/4 rounded" />
+                        <Skeleton className="h-4 w-1/2 rounded" />
+                        <Skeleton className="h-6 w-20 rounded" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    {services.map((service) => {
+                      const IconComponent = service.icon;
+                      return (
+                        <button
+                          key={service.id}
+                          onClick={() => setSelectedService(service.id)}
+                          className={cn(
+                            "p-4 sm:p-5 rounded-xl border-2 text-left transition-all hover:border-primary group",
+                            selectedService === service.id
+                              ? "border-primary bg-primary/5 shadow-lg"
+                              : "border-border hover:shadow-md"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-colors",
+                            selectedService === service.id ? "bg-primary text-white" : "bg-primary/10 text-primary"
+                          )}>
+                            <IconComponent className="w-6 h-6" />
+                          </div>
+                          <h3 className="font-semibold text-foreground mb-1 text-sm sm:text-base">
+                            {service.name}
+                          </h3>
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground mb-2">
+                            <Clock className="w-3.5 h-3.5" />
+                            {service.duration}
+                          </div>
+                          <div className="text-lg sm:text-xl font-bold text-primary">
+                            ₹{service.price}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )
               )}
 
               {/* Step 2: Date Selection */}
