@@ -12,13 +12,28 @@ import {
   Users,
   LogOut,
   Snowflake,
-  Menu
+  Menu,
+  ChevronLeft,
+  Bell,
+  Settings,
+  Home,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
-  { path: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
   { path: "/admin/bookings", icon: Calendar, label: "Bookings" },
   { path: "/admin/services", icon: Package, label: "Services" },
   { path: "/admin/testimonials", icon: MessageSquare, label: "Testimonials" },
@@ -42,16 +57,28 @@ const AdminLayout = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen">
-        <div className="w-64 bg-card border-r p-4 space-y-4">
-          <Skeleton className="h-8 w-32" />
-          {[...Array(7)].map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
+      <div className="flex h-screen bg-background">
+        {/* Desktop Sidebar Skeleton */}
+        <div className="hidden lg:flex w-72 flex-col border-r bg-card/50 p-4 space-y-4">
+          <div className="flex items-center gap-3 px-2 py-4">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <Skeleton className="h-6 w-32" />
+          </div>
+          <div className="space-y-2">
+            {[...Array(7)].map((_, i) => (
+              <Skeleton key={i} className="h-11 w-full rounded-xl" />
+            ))}
+          </div>
         </div>
-        <div className="flex-1 p-8">
-          <Skeleton className="h-8 w-48 mb-8" />
-          <Skeleton className="h-64 w-full" />
+        {/* Main Content Skeleton */}
+        <div className="flex-1 p-4 lg:p-8 space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-xl" />
+            ))}
+          </div>
+          <Skeleton className="h-72 w-full rounded-xl" />
         </div>
       </div>
     );
@@ -61,34 +88,67 @@ const AdminLayout = () => {
     return null;
   }
 
-  const NavContent = () => (
+  const NavContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="flex flex-col h-full">
-      <Link to="/" className="flex items-center gap-2 mb-8 px-2">
-        <Snowflake className="h-8 w-8 text-primary" />
-        <span className="font-bold text-xl">Admin Panel</span>
-      </Link>
+      {/* Logo Section */}
+      <div className={cn(
+        "flex items-center gap-3 mb-8",
+        isMobile ? "px-2 py-4" : "px-4 py-6"
+      )}>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+          <Snowflake className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <span className="font-bold text-lg">Chill Thrive</span>
+          <span className="block text-xs text-muted-foreground">Admin Panel</span>
+        </div>
+      </div>
       
-      <nav className="flex-1 space-y-1">
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 px-2">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.exact 
+            ? location.pathname === item.path 
+            : location.pathname.startsWith(item.path) && item.path !== "/admin";
+          
           return (
             <Link key={item.path} to={item.path}>
               <Button
-                variant={isActive ? "secondary" : "ghost"}
-                className="w-full justify-start gap-3"
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start gap-3 h-11 rounded-xl transition-all",
+                  isActive && "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
+                  !isActive && "text-muted-foreground hover:text-foreground"
+                )}
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className={cn(
+                  "h-5 w-5 transition-colors",
+                  isActive && "text-primary"
+                )} />
                 {item.label}
+                {isActive && (
+                  <span className="ml-auto h-2 w-2 rounded-full bg-primary" />
+                )}
               </Button>
             </Link>
           );
         })}
       </nav>
       
-      <div className="pt-4 border-t">
+      {/* Bottom Section */}
+      <div className="mt-auto space-y-2 px-2 pt-4 border-t">
+        <Link to="/">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:text-foreground"
+          >
+            <Home className="h-5 w-5" />
+            Back to Website
+          </Button>
+        </Link>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-destructive hover:text-destructive"
+          className="w-full justify-start gap-3 h-11 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10"
           onClick={() => signOut().then(() => navigate("/"))}
         >
           <LogOut className="h-5 w-5" />
@@ -101,32 +161,103 @@ const AdminLayout = () => {
   return (
     <div className="flex h-screen bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col bg-card border-r p-4">
+      <aside className="hidden lg:flex w-72 flex-col border-r bg-card/30 backdrop-blur-sm">
         <NavContent />
       </aside>
 
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <Snowflake className="h-6 w-6 text-primary" />
-          <span className="font-bold">Admin</span>
-        </Link>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-4">
-            <NavContent />
-          </SheetContent>
-        </Sheet>
-      </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header Bar */}
+        <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-card/80 backdrop-blur-sm px-4 lg:px-8">
+          {/* Mobile Menu */}
+          <div className="flex items-center gap-3 lg:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-xl">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-4">
+                <NavContent isMobile />
+              </SheetContent>
+            </Sheet>
+            <div className="flex items-center gap-2">
+              <Snowflake className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Admin</span>
+            </div>
+          </div>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto lg:p-8 p-4 pt-20 lg:pt-8">
-        <Outlet />
-      </main>
+          {/* Desktop Breadcrumb */}
+          <div className="hidden lg:flex items-center gap-2 text-sm">
+            <Link to="/admin" className="text-muted-foreground hover:text-foreground transition-colors">
+              Dashboard
+            </Link>
+            {location.pathname !== "/admin" && (
+              <>
+                <ChevronLeft className="h-4 w-4 text-muted-foreground rotate-180" />
+                <span className="font-medium capitalize">
+                  {location.pathname.split("/").pop()}
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-xl relative">
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Notifications</TooltipContent>
+            </Tooltip>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="gap-2 rounded-xl px-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                      {user?.email?.charAt(0).toUpperCase() || "A"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden sm:inline text-sm font-medium max-w-32 truncate">
+                    {user?.email}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/" className="flex items-center gap-2">
+                    <Home className="h-4 w-4" />
+                    Back to Website
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-destructive focus:text-destructive flex items-center gap-2"
+                  onClick={() => signOut().then(() => navigate("/"))}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-auto p-4 lg:p-8">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };
