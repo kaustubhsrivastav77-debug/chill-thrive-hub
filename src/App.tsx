@@ -23,6 +23,7 @@ import AdminGallery from "./pages/admin/AdminGallery";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCalendar from "./pages/admin/AdminCalendar";
+import AdminReports from "./pages/admin/AdminReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -118,6 +119,7 @@ function AppRoutes() {
             <Route path="calendar" element={<AdminCalendar />} />
             <Route path="bookings" element={<AdminBookings />} />
             <Route path="services" element={<AdminServices />} />
+            <Route path="reports" element={<AdminReports />} />
             <Route path="testimonials" element={<AdminTestimonials />} />
             <Route path="events" element={<AdminEvents />} />
             <Route path="gallery" element={<AdminGallery />} />

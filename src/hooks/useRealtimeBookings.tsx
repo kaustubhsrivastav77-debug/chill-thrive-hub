@@ -1,8 +1,7 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell } from "lucide-react";
 
 interface NewBooking {
   id: string;
@@ -14,8 +13,9 @@ interface NewBooking {
 
 export function useRealtimeBookings(onNewBooking?: (booking: NewBooking) => void) {
   const { toast } = useToast();
-  const { isStaff } = useAuth();
+  const { isStaff, loading } = useAuth();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   const showNotification = useCallback((booking: NewBooking) => {
     // Show toast notification
@@ -25,15 +25,12 @@ export function useRealtimeBookings(onNewBooking?: (booking: NewBooking) => void
       duration: 5000,
     });
 
-    // Play notification sound (optional)
-    try {
-      const audio = new Audio("/notification.mp3");
-      audio.volume = 0.3;
-      audio.play().catch(() => {
-        // Ignore audio play errors (user hasn't interacted yet)
+    // Browser notification if permitted
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification("New Booking!", {
+        body: `${booking.customer_name} booked for ${booking.booking_date} at ${booking.time_slot}`,
+        icon: "/favicon.ico",
       });
-    } catch {
-      // Ignore audio errors
     }
 
     // Callback for custom handling
@@ -41,11 +38,31 @@ export function useRealtimeBookings(onNewBooking?: (booking: NewBooking) => void
   }, [toast, onNewBooking]);
 
   useEffect(() => {
-    if (!isStaff) return;
+    // Wait for auth to load
+    if (loading) return;
+    
+    // Only subscribe if staff/admin
+    if (!isStaff) {
+      console.log("Realtime: User is not staff, skipping subscription");
+      return;
+    }
+
+    // Prevent duplicate subscriptions
+    if (channelRef.current) {
+      console.log("Realtime: Channel already exists");
+      return;
+    }
+
+    console.log("Realtime: Setting up booking notifications...");
+
+    // Request browser notification permission
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
 
     // Subscribe to new bookings
     channelRef.current = supabase
-      .channel("admin-bookings")
+      .channel("admin-bookings-realtime")
       .on(
         "postgres_changes",
         {
@@ -54,6 +71,7 @@ export function useRealtimeBookings(onNewBooking?: (booking: NewBooking) => void
           table: "bookings",
         },
         (payload) => {
+          console.log("Realtime: New booking received", payload);
           const newBooking = payload.new as NewBooking;
           showNotification(newBooking);
         }
@@ -66,6 +84,7 @@ export function useRealtimeBookings(onNewBooking?: (booking: NewBooking) => void
           table: "bookings",
         },
         (payload) => {
+          console.log("Realtime: Booking updated", payload);
           const updatedBooking = payload.new as NewBooking;
           if (payload.old && (payload.old as NewBooking).status !== updatedBooking.status) {
             toast({
@@ -76,16 +95,22 @@ export function useRealtimeBookings(onNewBooking?: (booking: NewBooking) => void
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+        setIsSubscribed(status === "SUBSCRIBED");
+      });
 
     return () => {
       if (channelRef.current) {
+        console.log("Realtime: Cleaning up subscription");
         supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        setIsSubscribed(false);
       }
     };
-  }, [isStaff, showNotification, toast]);
+  }, [isStaff, loading, showNotification, toast]);
 
-  return null;
+  return { isSubscribed };
 }
 
 export function RealtimeNotificationProvider({ children }: { children: React.ReactNode }) {
