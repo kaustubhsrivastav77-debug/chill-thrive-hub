@@ -19,6 +19,7 @@ import {
   Settings,
   Home,
   CalendarRange,
+  FileText,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,6 +40,7 @@ const navItems = [
   { path: "/admin/calendar", icon: CalendarRange, label: "Calendar" },
   { path: "/admin/bookings", icon: Calendar, label: "Bookings" },
   { path: "/admin/services", icon: Package, label: "Services" },
+  { path: "/admin/reports", icon: FileText, label: "Reports" },
   { path: "/admin/testimonials", icon: MessageSquare, label: "Testimonials" },
   { path: "/admin/events", icon: CalendarDays, label: "Events" },
   { path: "/admin/gallery", icon: Image, label: "Gallery" },
@@ -50,6 +52,9 @@ const AdminLayout = () => {
   const { user, loading, isStaff, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Enable realtime notifications for staff
+  const { isSubscribed } = useRealtimeBookings();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -215,10 +220,17 @@ const AdminLayout = () => {
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-xl relative">
                   <Bell className="h-5 w-5" />
-                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
+                  <span 
+                    className={cn(
+                      "absolute top-1.5 right-1.5 h-2 w-2 rounded-full transition-colors",
+                      isSubscribed ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"
+                    )} 
+                  />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Notifications</TooltipContent>
+              <TooltipContent>
+                {isSubscribed ? "Live notifications active" : "Connecting to notifications..."}
+              </TooltipContent>
             </Tooltip>
 
             <DropdownMenu>
