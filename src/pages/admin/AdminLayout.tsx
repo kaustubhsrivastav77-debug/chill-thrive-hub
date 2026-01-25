@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeBookings } from "@/hooks/useRealtimeBookings";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, 
@@ -17,6 +18,7 @@ import {
   Bell,
   Settings,
   Home,
+  CalendarRange,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,12 +36,14 @@ import {
 
 const navItems = [
   { path: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
+  { path: "/admin/calendar", icon: CalendarRange, label: "Calendar" },
   { path: "/admin/bookings", icon: Calendar, label: "Bookings" },
   { path: "/admin/services", icon: Package, label: "Services" },
   { path: "/admin/testimonials", icon: MessageSquare, label: "Testimonials" },
   { path: "/admin/events", icon: CalendarDays, label: "Events" },
   { path: "/admin/gallery", icon: Image, label: "Gallery" },
   { path: "/admin/users", icon: Users, label: "Users" },
+  { path: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
 const AdminLayout = () => {
@@ -83,6 +87,9 @@ const AdminLayout = () => {
       </div>
     );
   }
+
+  // Enable realtime notifications for staff
+  useRealtimeBookings();
 
   if (!user || !isStaff) {
     return null;
