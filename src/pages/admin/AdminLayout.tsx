@@ -278,7 +278,7 @@ const AdminLayout = () => {
                     </span>
                   </div>
                 </div>
-                <ScrollArea className="max-h-80">
+                <div className="max-h-[320px] overflow-y-auto">
                   {recentBookings.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground text-sm">
                       No recent bookings
@@ -330,7 +330,7 @@ const AdminLayout = () => {
                       ))}
                     </div>
                   )}
-                </ScrollArea>
+                </div>
                 <div className="p-2 border-t">
                   <Link to="/admin/bookings" onClick={() => setNotificationsOpen(false)}>
                     <Button variant="ghost" size="sm" className="w-full">
