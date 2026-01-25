@@ -1,16 +1,32 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Users, DollarSign, Package, TrendingUp } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Calendar,
+  Users,
+  DollarSign,
+  Package,
+  TrendingUp,
+  Snowflake,
+  Activity,
+} from "lucide-react";
+import { format, startOfMonth, endOfMonth, subMonths, eachDayOfInterval, subDays } from "date-fns";
+import { StatCard } from "@/components/admin/StatCard";
+import { RevenueChart } from "@/components/admin/RevenueChart";
+import { QuickActions } from "@/components/admin/QuickActions";
+import { RecentBookingsTable } from "@/components/admin/RecentBookingsTable";
+import { BookingStatusChart } from "@/components/admin/BookingStatusChart";
 
 interface Stats {
   totalBookings: number;
   pendingBookings: number;
   confirmedBookings: number;
+  cancelledBookings: number;
+  completedBookings: number;
   totalRevenue: number;
   activeServices: number;
   totalCustomers: number;
+  monthlyGrowth: number;
 }
 
 interface RecentBooking {
@@ -22,16 +38,27 @@ interface RecentBooking {
   services: { name: string } | null;
 }
 
+interface ChartData {
+  date: string;
+  revenue: number;
+  bookings: number;
+}
+
 const Dashboard = () => {
+  const { user } = useAuth();
   const [stats, setStats] = useState<Stats>({
     totalBookings: 0,
     pendingBookings: 0,
     confirmedBookings: 0,
+    cancelledBookings: 0,
+    completedBookings: 0,
     totalRevenue: 0,
     activeServices: 0,
     totalCustomers: 0,
+    monthlyGrowth: 0,
   });
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,13 +69,22 @@ const Dashboard = () => {
     const now = new Date();
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
+    const lastMonthStart = startOfMonth(subMonths(now, 1));
+    const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
-    // Fetch bookings stats
+    // Fetch current month bookings
     const { data: bookings } = await supabase
       .from("bookings")
       .select("*")
       .gte("booking_date", format(monthStart, "yyyy-MM-dd"))
       .lte("booking_date", format(monthEnd, "yyyy-MM-dd"));
+
+    // Fetch last month bookings for comparison
+    const { data: lastMonthBookings } = await supabase
+      .from("bookings")
+      .select("*")
+      .gte("booking_date", format(lastMonthStart, "yyyy-MM-dd"))
+      .lte("booking_date", format(lastMonthEnd, "yyyy-MM-dd"));
 
     // Fetch services count
     const { count: servicesCount } = await supabase
@@ -78,20 +114,58 @@ const Dashboard = () => {
 
     const uniqueCustomers = new Set(customers?.map((c) => c.customer_email)).size;
 
+    // Generate chart data for last 14 days
+    const last14Days = eachDayOfInterval({
+      start: subDays(now, 13),
+      end: now,
+    });
+
+    const { data: chartBookings } = await supabase
+      .from("bookings")
+      .select("booking_date, payment_amount, payment_status")
+      .gte("booking_date", format(subDays(now, 13), "yyyy-MM-dd"))
+      .lte("booking_date", format(now, "yyyy-MM-dd"));
+
+    const chartDataMap = last14Days.map((day) => {
+      const dateStr = format(day, "yyyy-MM-dd");
+      const dayBookings = chartBookings?.filter((b) => b.booking_date === dateStr) || [];
+      const revenue = dayBookings
+        .filter((b) => b.payment_status === "completed")
+        .reduce((sum, b) => sum + (b.payment_amount || 0), 0);
+      return {
+        date: dateStr,
+        revenue,
+        bookings: dayBookings.length * 100, // Scale for visibility
+      };
+    });
+
+    setChartData(chartDataMap);
+
     if (bookings) {
       const pending = bookings.filter((b) => b.status === "pending").length;
       const confirmed = bookings.filter((b) => b.status === "confirmed").length;
+      const cancelled = bookings.filter((b) => b.status === "cancelled").length;
+      const completed = bookings.filter((b) => b.status === "completed").length;
       const revenue = bookings
         .filter((b) => b.payment_status === "completed")
         .reduce((sum, b) => sum + (b.payment_amount || 0), 0);
+
+      // Calculate growth
+      const lastMonthTotal = lastMonthBookings?.length || 0;
+      const growth = lastMonthTotal > 0
+        ? Math.round(((bookings.length - lastMonthTotal) / lastMonthTotal) * 100)
+        : 0;
 
       setStats({
         totalBookings: bookings.length,
         pendingBookings: pending,
         confirmedBookings: confirmed,
+        cancelledBookings: cancelled,
+        completedBookings: completed,
         totalRevenue: revenue,
         activeServices: servicesCount || 0,
         totalCustomers: uniqueCustomers,
+        monthlyGrowth: growth,
       });
     }
 
@@ -102,127 +176,84 @@ const Dashboard = () => {
     setLoading(false);
   };
 
-  const statCards = [
-    {
-      title: "Total Bookings",
-      value: stats.totalBookings,
-      subtitle: "This month",
-      icon: Calendar,
-      color: "text-primary",
-    },
-    {
-      title: "Pending",
-      value: stats.pendingBookings,
-      subtitle: "Awaiting confirmation",
-      icon: TrendingUp,
-      color: "text-yellow-500",
-    },
-    {
-      title: "Confirmed",
-      value: stats.confirmedBookings,
-      subtitle: "Ready for session",
-      icon: Users,
-      color: "text-green-500",
-    },
-    {
-      title: "Revenue",
-      value: `₹${stats.totalRevenue.toLocaleString()}`,
-      subtitle: "This month",
-      icon: DollarSign,
-      color: "text-emerald-500",
-    },
-    {
-      title: "Active Services",
-      value: stats.activeServices,
-      subtitle: "Available for booking",
-      icon: Package,
-      color: "text-blue-500",
-    },
-    {
-      title: "Customers",
-      value: stats.totalCustomers,
-      subtitle: "Last 30 days",
-      icon: Users,
-      color: "text-purple-500",
-    },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-      case "cancelled":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome to your admin dashboard</p>
+    <div className="space-y-6 md:space-y-8 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <Snowflake className="h-5 w-5 text-primary" />
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold">{greeting()}!</h1>
+          </div>
+          <p className="text-muted-foreground">
+            Here's what's happening with Chill Thrive today
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-4 py-2 rounded-full">
+          <Activity className="h-4 w-4 text-emerald-500" />
+          <span>System operational</span>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {statCards.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Total Bookings"
+          value={stats.totalBookings}
+          subtitle="This month"
+          icon={Calendar}
+          variant="primary"
+          trend={stats.monthlyGrowth !== 0 ? { value: stats.monthlyGrowth, isPositive: stats.monthlyGrowth > 0 } : undefined}
+        />
+        <StatCard
+          title="Revenue"
+          value={`₹${stats.totalRevenue.toLocaleString()}`}
+          subtitle="This month"
+          icon={DollarSign}
+          variant="success"
+        />
+        <StatCard
+          title="Active Services"
+          value={stats.activeServices}
+          subtitle="Available for booking"
+          icon={Package}
+          variant="default"
+        />
+        <StatCard
+          title="Customers"
+          value={stats.totalCustomers}
+          subtitle="Last 30 days"
+          icon={Users}
+          variant="default"
+        />
       </div>
 
-      {/* Recent Bookings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Bookings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentBookings.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No bookings yet
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {recentBookings.map((booking) => (
-                <div
-                  key={booking.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-muted/50"
-                >
-                  <div>
-                    <p className="font-medium">{booking.customer_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {booking.services?.name || "Service"} •{" "}
-                      {format(new Date(booking.booking_date), "MMM d, yyyy")} at{" "}
-                      {booking.time_slot}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(
-                      booking.status
-                    )}`}
-                  >
-                    {booking.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        <RevenueChart data={chartData} loading={loading} />
+        <BookingStatusChart
+          pending={stats.pendingBookings}
+          confirmed={stats.confirmedBookings}
+          cancelled={stats.cancelledBookings}
+          completed={stats.completedBookings}
+          loading={loading}
+        />
+      </div>
+
+      {/* Quick Actions & Recent Bookings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <QuickActions />
+        <RecentBookingsTable bookings={recentBookings} loading={loading} />
+      </div>
     </div>
   );
 };
