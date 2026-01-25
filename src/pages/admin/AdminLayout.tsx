@@ -93,9 +93,6 @@ const AdminLayout = () => {
     );
   }
 
-  // Enable realtime notifications for staff
-  useRealtimeBookings();
-
   if (!user || !isStaff) {
     return null;
   }
