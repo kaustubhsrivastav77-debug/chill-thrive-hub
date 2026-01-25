@@ -9,10 +9,23 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Search, Eye, Check, X, Trash2 } from "lucide-react";
+import { Search, Eye, Check, X, Trash2, CheckCircle2, Star } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+const GOOGLE_MAPS_REVIEW_URL = "https://www.google.com/search?q=chill+thrive&oq=chill+thrive&gs_lcrp=EgZjaHJvbWUqCggAEAAY4wIYgAQyCggAEAAY4wIYgAQyDQgBEC4YrwEYxwEYgAQyBwgCEAAYgAQyBwgDEAAYgAQyBwgEEAAYgAQyBggFEEUYPTIGCAYQRRg9MgYIBxBFGD3SAQgyODU2ajBqN6gCALACAA&sourceid=chrome&ie=UTF-8#";
 
 interface Booking {
   id: string;
@@ -36,6 +49,7 @@ const AdminBookings = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,7 +73,29 @@ const AdminBookings = () => {
     setLoading(false);
   };
 
+  const sendStatusNotification = async (booking: Booking, status: "confirmed" | "completed") => {
+    try {
+      await supabase.functions.invoke("send-status-notification", {
+        body: {
+          customerName: booking.customer_name,
+          customerEmail: booking.customer_email,
+          serviceName: booking.services?.name || "Service",
+          bookingDate: format(new Date(booking.booking_date), "MMMM d, yyyy"),
+          timeSlot: booking.time_slot,
+          status,
+          googleMapsUrl: GOOGLE_MAPS_REVIEW_URL,
+        },
+      });
+      console.log(`${status} notification sent to ${booking.customer_email}`);
+    } catch (error) {
+      console.log("Notification not sent (email service may not be configured)");
+    }
+  };
+
   const updateBookingStatus = async (id: string, status: string) => {
+    setProcessingId(id);
+    const booking = bookings.find(b => b.id === id);
+    
     const { error } = await supabase
       .from("bookings")
       .update({ status })
@@ -68,9 +104,19 @@ const AdminBookings = () => {
     if (error) {
       toast({ title: "Error updating booking", variant: "destructive" });
     } else {
-      toast({ title: `Booking ${status}` });
+      // Send notification for confirmed or completed status
+      if (booking && (status === "confirmed" || status === "completed")) {
+        await sendStatusNotification(booking, status);
+        toast({ 
+          title: `Booking ${status}`, 
+          description: `Customer notified via email${status === "completed" ? " with feedback request" : ""}` 
+        });
+      } else {
+        toast({ title: `Booking ${status}` });
+      }
       fetchBookings();
     }
+    setProcessingId(null);
   };
 
   const deleteBooking = async (id: string) => {
@@ -284,13 +330,17 @@ const AdminBookings = () => {
                               )}
                             </DialogContent>
                           </Dialog>
+                          
+                          {/* Pending -> Confirm or Cancel */}
                           {booking.status === "pending" && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="text-green-500 hover:text-green-600"
+                                disabled={processingId === booking.id}
                                 onClick={() => updateBookingStatus(booking.id, "confirmed")}
+                                title="Confirm booking"
                               >
                                 <Check className="h-4 w-4" />
                               </Button>
@@ -298,12 +348,51 @@ const AdminBookings = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="text-red-500 hover:text-red-600"
+                                disabled={processingId === booking.id}
                                 onClick={() => updateBookingStatus(booking.id, "cancelled")}
+                                title="Cancel booking"
                               >
                                 <X className="h-4 w-4" />
                               </Button>
                             </>
                           )}
+                          
+                          {/* Confirmed -> Mark Complete */}
+                          {booking.status === "confirmed" && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-blue-500 hover:text-blue-600"
+                                  disabled={processingId === booking.id}
+                                  title="Mark as completed"
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Complete Booking?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will mark the booking as completed and send a feedback request 
+                                    with a Google Maps review link to the customer.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => updateBookingStatus(booking.id, "completed")}
+                                    className="bg-blue-500 hover:bg-blue-600"
+                                  >
+                                    <Star className="mr-2 h-4 w-4" />
+                                    Complete & Request Feedback
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                          
                           <Button
                             variant="ghost"
                             size="icon"

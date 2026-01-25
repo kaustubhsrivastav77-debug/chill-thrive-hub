@@ -21,10 +21,12 @@ import {
   User,
   Mail,
   Phone,
-  CreditCard
+  CreditCard,
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const fallbackServices = [
   { id: "ice-bath", name: "Ice Bath Therapy", price: 1500, duration: "60 min", icon: Snowflake },
@@ -47,6 +49,10 @@ const steps = [
   { num: 4, label: "Details", icon: User },
 ];
 
+interface SlotAvailability {
+  [key: string]: number; // slot_time -> available count
+}
+
 const BookingPage = () => {
   const [step, setStep] = useState(1);
   const [services, setServices] = useState(fallbackServices);
@@ -62,17 +68,28 @@ const BookingPage = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [slotAvailability, setSlotAvailability] = useState<SlotAvailability>({});
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
+  const [isCheckingSlots, setIsCheckingSlots] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchServicesAndSlots();
   }, []);
 
+  // Fetch slot availability when date changes
+  useEffect(() => {
+    if (selectedDate) {
+      checkSlotAvailability(selectedDate);
+    }
+  }, [selectedDate]);
+
   const fetchServicesAndSlots = async () => {
     setIsDataLoading(true);
-    const [servicesRes, slotsRes] = await Promise.all([
+    const [servicesRes, slotsRes, blockedRes] = await Promise.all([
       supabase.from("services").select("id, name, price, duration_minutes").eq("is_active", true),
-      supabase.from("time_slots").select("slot_time").eq("is_active", true).order("slot_time"),
+      supabase.from("time_slots").select("slot_time, capacity").eq("is_active", true).order("slot_time"),
+      supabase.from("blocked_dates").select("blocked_date"),
     ]);
 
     if (servicesRes.data && servicesRes.data.length > 0) {
@@ -90,8 +107,64 @@ const BookingPage = () => {
 
     if (slotsRes.data && slotsRes.data.length > 0) {
       setTimeSlots(slotsRes.data.map((s) => s.slot_time));
+      // Initialize availability with capacity
+      const availability: SlotAvailability = {};
+      slotsRes.data.forEach(s => {
+        availability[s.slot_time] = s.capacity;
+      });
+      setSlotAvailability(availability);
     }
+
+    if (blockedRes.data) {
+      setBlockedDates(blockedRes.data.map(d => d.blocked_date));
+    }
+
     setIsDataLoading(false);
+  };
+
+  const checkSlotAvailability = async (date: Date) => {
+    setIsCheckingSlots(true);
+    const dateStr = format(date, "yyyy-MM-dd");
+
+    // Get all time slots with capacity
+    const { data: slots } = await supabase
+      .from("time_slots")
+      .select("slot_time, capacity")
+      .eq("is_active", true);
+
+    // Get bookings for this date (excluding cancelled)
+    const { data: bookings } = await supabase
+      .from("bookings")
+      .select("time_slot")
+      .eq("booking_date", dateStr)
+      .neq("status", "cancelled");
+
+    const availability: SlotAvailability = {};
+    
+    if (slots) {
+      slots.forEach(slot => {
+        const bookedCount = bookings?.filter(b => b.time_slot === slot.slot_time).length || 0;
+        availability[slot.slot_time] = Math.max(0, slot.capacity - bookedCount);
+      });
+    }
+
+    setSlotAvailability(availability);
+    setIsCheckingSlots(false);
+
+    // Reset selected time if it's no longer available
+    if (selectedTime && availability[selectedTime] === 0) {
+      setSelectedTime(null);
+      toast({
+        title: "Slot no longer available",
+        description: "Please select another time slot.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const isDateBlocked = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return blockedDates.includes(dateStr);
   };
 
   const selectedServiceData = services.find((s) => s.id === selectedService);
@@ -109,6 +182,38 @@ const BookingPage = () => {
     setIsLoading(true);
 
     try {
+      // Double-check availability before submitting
+      if (selectedDate && selectedTime) {
+        const dateStr = format(selectedDate, "yyyy-MM-dd");
+        const { data: existingBookings } = await supabase
+          .from("bookings")
+          .select("id")
+          .eq("booking_date", dateStr)
+          .eq("time_slot", selectedTime)
+          .neq("status", "cancelled");
+
+        const { data: slotData } = await supabase
+          .from("time_slots")
+          .select("capacity")
+          .eq("slot_time", selectedTime)
+          .single();
+
+        const capacity = slotData?.capacity || 1;
+        const bookedCount = existingBookings?.length || 0;
+
+        if (bookedCount >= capacity) {
+          toast({
+            title: "Slot no longer available",
+            description: "This time slot was just booked by someone else. Please select a different slot.",
+            variant: "destructive",
+          });
+          setStep(3);
+          await checkSlotAvailability(selectedDate);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const { error } = await supabase.from("bookings").insert({
         customer_name: formData.name,
         customer_email: formData.email,
@@ -117,11 +222,12 @@ const BookingPage = () => {
         booking_date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
         time_slot: selectedTime || "",
         payment_amount: selectedServiceData?.price || 0,
+        status: "pending", // Explicitly set to pending
       });
 
       if (error) throw error;
 
-      // Try to send confirmation email (won't fail if not configured)
+      // Try to send confirmation email
       try {
         await supabase.functions.invoke("send-booking-confirmation", {
           body: {
@@ -138,7 +244,7 @@ const BookingPage = () => {
       }
 
       setIsSubmitted(true);
-      toast({ title: "Booking confirmed!", description: "We'll see you soon!" });
+      toast({ title: "Booking submitted!", description: "Your booking is pending confirmation." });
     } catch (error: any) {
       toast({ title: "Booking failed", description: error.message, variant: "destructive" });
     } finally {
@@ -150,10 +256,14 @@ const BookingPage = () => {
     switch (step) {
       case 1: return selectedService !== null;
       case 2: return selectedDate !== undefined;
-      case 3: return selectedTime !== null;
+      case 3: return selectedTime !== null && slotAvailability[selectedTime] > 0;
       case 4: return formData.name && formData.phone && formData.email;
       default: return false;
     }
+  };
+
+  const getAvailableSlotsCount = () => {
+    return Object.values(slotAvailability).filter(v => v > 0).length;
   };
 
   if (isSubmitted) {
@@ -163,17 +273,22 @@ const BookingPage = () => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <Card className="max-w-lg mx-auto text-center border-0 shadow-2xl">
               <CardContent className="py-10 sm:py-12">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <Check className="w-10 h-10 text-white" />
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <Clock className="w-10 h-10 text-white" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                  Booking Confirmed! 🎉
+                  Booking Submitted! ⏳
                 </h2>
                 <p className="text-muted-foreground mb-6">
-                  Thank you for booking with ChillThrive. We've sent a confirmation 
-                  to <span className="font-medium text-foreground">{formData.email}</span>.
+                  Your booking is pending confirmation. We'll notify you at{" "}
+                  <span className="font-medium text-foreground">{formData.email}</span>{" "}
+                  once confirmed.
                 </p>
                 <div className="bg-muted/50 rounded-xl p-5 text-left mb-6 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status</span>
+                    <span className="font-medium text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full text-sm">Pending</span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Service</span>
                     <span className="font-medium text-foreground">{selectedServiceData?.name}</span>
@@ -192,10 +307,13 @@ const BookingPage = () => {
                     <span className="font-bold text-primary text-lg">₹{selectedServiceData?.price}</span>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Please arrive 10 minutes before your scheduled time. 
-                  Payment can be made at the venue.
-                </p>
+                <Alert className="text-left">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    You'll receive an email once your booking is confirmed by our team. 
+                    Payment will be collected after confirmation.
+                  </AlertDescription>
+                </Alert>
               </CardContent>
             </Card>
           </div>
@@ -324,34 +442,76 @@ const BookingPage = () => {
 
               {/* Step 2: Date Selection */}
               {step === 2 && (
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-4">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
-                    disabled={(date) => date < new Date() || date.getDay() === 0}
+                    disabled={(date) => date < new Date() || date.getDay() === 0 || isDateBlocked(date)}
                     className="rounded-xl border shadow-sm"
                   />
+                  {blockedDates.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Some dates may be unavailable due to maintenance or holidays.
+                    </p>
+                  )}
                 </div>
               )}
 
               {/* Step 3: Time Selection */}
               {step === 3 && (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
-                  {timeSlots.map((time) => (
-                    <button
-                      key={time}
-                      onClick={() => setSelectedTime(time)}
-                      className={cn(
-                        "py-3 px-2 sm:px-4 rounded-xl border-2 font-medium transition-all hover:border-primary text-sm sm:text-base",
-                        selectedTime === time
-                          ? "border-primary bg-primary text-primary-foreground shadow-lg"
-                          : "border-border text-foreground hover:shadow-md"
+                <div className="space-y-4">
+                  {isCheckingSlots ? (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
+                      {timeSlots.map((_, i) => (
+                        <Skeleton key={i} className="h-12 rounded-xl" />
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      {getAvailableSlotsCount() === 0 ? (
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            No slots available for this date. Please select a different date.
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center mb-4">
+                          {getAvailableSlotsCount()} time slots available for {selectedDate && format(selectedDate, "MMMM d, yyyy")}
+                        </p>
                       )}
-                    >
-                      {time}
-                    </button>
-                  ))}
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
+                        {timeSlots.map((time) => {
+                          const available = slotAvailability[time] || 0;
+                          const isAvailable = available > 0;
+                          return (
+                            <button
+                              key={time}
+                              onClick={() => isAvailable && setSelectedTime(time)}
+                              disabled={!isAvailable}
+                              className={cn(
+                                "py-3 px-2 sm:px-4 rounded-xl border-2 font-medium transition-all text-sm sm:text-base relative",
+                                !isAvailable && "opacity-50 cursor-not-allowed bg-muted border-border line-through",
+                                isAvailable && selectedTime === time
+                                  ? "border-primary bg-primary text-primary-foreground shadow-lg"
+                                  : isAvailable 
+                                    ? "border-border text-foreground hover:border-primary hover:shadow-md"
+                                    : "border-border text-muted-foreground"
+                              )}
+                            >
+                              {time}
+                              {!isAvailable && (
+                                <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5 rounded-full">
+                                  Full
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -428,6 +588,9 @@ const BookingPage = () => {
                       <span className="text-muted-foreground">Total</span>
                       <span className="text-xl font-bold text-primary">₹{selectedServiceData?.price}</span>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Payment will be collected after your booking is confirmed.
+                    </p>
                   </div>
                 </form>
               )}
@@ -451,7 +614,7 @@ const BookingPage = () => {
                   </Button>
                 ) : (
                   <Button onClick={handleSubmit} disabled={!canProceed() || isLoading} className="h-11 sm:h-12">
-                    {isLoading ? "Confirming..." : "Confirm Booking"}
+                    {isLoading ? "Submitting..." : "Submit Booking"}
                     <Check className="ml-2 w-4 h-4" />
                   </Button>
                 )}
