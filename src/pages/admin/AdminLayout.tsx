@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeBookings } from "@/hooks/useRealtimeBookings";
@@ -20,9 +20,12 @@ import {
   Home,
   CalendarRange,
   FileText,
+  Check,
+  X,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,6 +37,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+
+interface RecentBooking {
+  id: string;
+  customer_name: string;
+  booking_date: string;
+  time_slot: string;
+  status: string;
+  created_at: string;
+}
 
 const navItems = [
   { path: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
@@ -52,9 +71,29 @@ const AdminLayout = () => {
   const { user, loading, isStaff, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   // Enable realtime notifications for staff
   const { isSubscribed } = useRealtimeBookings();
+
+  // Fetch recent bookings for notifications
+  useEffect(() => {
+    const fetchRecentBookings = async () => {
+      const { data } = await supabase
+        .from("bookings")
+        .select("id, customer_name, booking_date, time_slot, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      
+      if (data) setRecentBookings(data);
+    };
+
+    if (isStaff && !loading) {
+      fetchRecentBookings();
+    }
+  }, [isStaff, loading]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -180,14 +219,16 @@ const AdminLayout = () => {
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-card/80 backdrop-blur-sm px-4 lg:px-8">
           {/* Mobile Menu */}
           <div className="flex items-center gap-3 lg:hidden">
-            <Sheet>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-xl">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-4">
-                <NavContent isMobile />
+              <SheetContent side="left" className="w-72 p-0 flex flex-col">
+                <ScrollArea className="flex-1 p-4">
+                  <NavContent isMobile />
+                </ScrollArea>
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
@@ -213,8 +254,8 @@ const AdminLayout = () => {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
+            <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+              <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-xl relative">
                   <Bell className="h-5 w-5" />
                   <span 
@@ -224,11 +265,81 @@ const AdminLayout = () => {
                     )} 
                   />
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {isSubscribed ? "Live notifications active" : "Connecting to notifications..."}
-              </TooltipContent>
-            </Tooltip>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-0 bg-popover border shadow-lg">
+                <div className="p-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">Recent Bookings</h4>
+                    <span className={cn(
+                      "text-xs px-2 py-0.5 rounded-full",
+                      isSubscribed ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"
+                    )}>
+                      {isSubscribed ? "Live" : "Connecting..."}
+                    </span>
+                  </div>
+                </div>
+                <ScrollArea className="max-h-80">
+                  {recentBookings.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground text-sm">
+                      No recent bookings
+                    </div>
+                  ) : (
+                    <div className="divide-y">
+                      {recentBookings.map((booking) => (
+                        <Link
+                          key={booking.id}
+                          to="/admin/bookings"
+                          onClick={() => setNotificationsOpen(false)}
+                          className="flex items-start gap-3 p-3 hover:bg-muted/50 transition-colors"
+                        >
+                          <div className={cn(
+                            "mt-0.5 h-8 w-8 rounded-full flex items-center justify-center shrink-0",
+                            booking.status === "confirmed" && "bg-emerald-500/10",
+                            booking.status === "pending" && "bg-amber-500/10",
+                            booking.status === "completed" && "bg-primary/10",
+                            booking.status === "cancelled" && "bg-destructive/10"
+                          )}>
+                            {booking.status === "confirmed" || booking.status === "completed" ? (
+                              <Check className={cn(
+                                "h-4 w-4",
+                                booking.status === "confirmed" && "text-emerald-500",
+                                booking.status === "completed" && "text-primary"
+                              )} />
+                            ) : booking.status === "cancelled" ? (
+                              <X className="h-4 w-4 text-destructive" />
+                            ) : (
+                              <Bell className="h-4 w-4 text-amber-500" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{booking.customer_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(booking.booking_date), "MMM d")} at {booking.time_slot}
+                            </p>
+                          </div>
+                          <span className={cn(
+                            "text-xs px-2 py-0.5 rounded-full capitalize shrink-0",
+                            booking.status === "confirmed" && "bg-emerald-500/10 text-emerald-600",
+                            booking.status === "pending" && "bg-amber-500/10 text-amber-600",
+                            booking.status === "completed" && "bg-primary/10 text-primary",
+                            booking.status === "cancelled" && "bg-destructive/10 text-destructive"
+                          )}>
+                            {booking.status}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+                <div className="p-2 border-t">
+                  <Link to="/admin/bookings" onClick={() => setNotificationsOpen(false)}>
+                    <Button variant="ghost" size="sm" className="w-full">
+                      View All Bookings
+                    </Button>
+                  </Link>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -110,9 +110,8 @@ const AdminReports = () => {
     // Calculate stats
     const confirmed = data.filter((b) => b.status === "confirmed" || b.status === "completed");
     const cancelled = data.filter((b) => b.status === "cancelled");
-    const revenue = data
-      .filter((b) => b.payment_status === "completed")
-      .reduce((sum, b) => sum + (b.payment_amount || 0), 0);
+    // Calculate revenue from confirmed/completed bookings (not just paid ones)
+    const revenue = confirmed.reduce((sum, b) => sum + (b.payment_amount || b.services?.price || 0), 0);
     const uniqueEmails = new Set(data.map((b) => b.customer_email));
 
     setStats({
@@ -120,7 +119,7 @@ const AdminReports = () => {
       confirmedBookings: confirmed.length,
       cancelledBookings: cancelled.length,
       totalRevenue: revenue,
-      avgBookingValue: data.length > 0 ? revenue / data.length : 0,
+      avgBookingValue: confirmed.length > 0 ? revenue / confirmed.length : 0,
       uniqueCustomers: uniqueEmails.size,
     });
 
